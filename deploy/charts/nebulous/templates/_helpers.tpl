@@ -46,7 +46,7 @@ headscale
 {{- end }}
 
 {{- define "headscale.host" -}}
-{{- include "headscale.serviceName" . }}.{{- include "headscale.namespace" . }}.svc.cluster.local
+http://{{- include "headscale.serviceName" . }}.{{- include "headscale.namespace" . }}.svc.cluster.local
 {{- end }}
 
 {{- define "postgres.name" -}}
