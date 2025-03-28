@@ -254,9 +254,9 @@ metadata:
   labels:
     {{- include "common.labels" . | nindent 4 }}
   {{- with .Values.headscale.service.annotations }}
-    annotations:
-        {{- toYaml . | nindent 4 }}
-    {{- end }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   selector:
     app: {{ include "headscale.name" . }}
