@@ -1,6 +1,6 @@
 # nebulous
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.61](https://img.shields.io/badge/AppVersion-0.1.61-informational?style=flat-square)
+![Version: 0.2.1](https://img.shields.io/badge/Version-0.2.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.61](https://img.shields.io/badge/AppVersion-0.1.61-informational?style=flat-square)
 
 A cross-cloud container orchestrator for AI workloads
 
@@ -40,11 +40,13 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | headscale.derp.configMap.name | string | `""` | The name of the ConfigMap containing the DERP server configuration. |
 | headscale.derp.externalMaps | list | `[]` | URLs of externally available DERP maps encoded in JSON. |
 | headscale.dns.base_domain | string | `""` | The base domain for MagicDNS hostnames. Cannot be the same as the Headscale server's domain. Refer to https://github.com/juanfont/headscale/blob/main/config-example.yaml for details. |
-| headscale.domain | string | `""` | The domain under which the Headscale server is exposed. |
+| headscale.domain | string | `""` | The domain under which the Headscale server is exposed. Required if create is true. The headscale server must be reachable at https://${domain}:443. |
 | headscale.imageTag | string | `"latest"` | The Headscale image tag. |
 | headscale.ingress.annotations | object | `{}` | Annotations to add to the Ingress resource. |
 | headscale.ingress.enabled | bool | `false` | If enabled, create an Ingress resource. Ignored unless 'enabled' is true. |
 | headscale.ingress.ingressClassName | string | `""` | The ingress class. |
+| headscale.log.format | string | `"text"` | The log format of the Headscale server. Options are "text" or "json". |
+| headscale.log.level | string | `"info"` | The log level of the Headscale server. Options are "off", "trace", "debug", "info", "warn", "error". |
 | headscale.namespaceOverride | string | `""` | Namespace override for the Headscale deployment. |
 | headscale.prefixes | object | `{"v4":"100.64.0.0/10","v6":"fd7a:115c:a1e0::/48"}` | Prefixes to allocate tailaddresses from. Must be within the IP ranges supported by the Tailscale client. Refer to https://github.com/juanfont/headscale/blob/main/config-example.yaml for details. |
 | headscale.privateKeys.claimName | string | `"headscale-keys-pvc"` | The name of the PersistentVolumeClaim for the Headscale private keys. |

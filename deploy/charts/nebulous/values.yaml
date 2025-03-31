@@ -186,7 +186,8 @@ headscale:
   namespaceOverride: ""
   # -- The Headscale image tag.
   imageTag: "latest"
-  # -- The domain under which the Headscale server is exposed.
+  # -- The domain under which the Headscale server is exposed. Required if create is true.
+  # The headscale server must be reachable at https://${domain}:443.
   domain: ""
 
   # -- Prefixes to allocate tailaddresses from. Must be within the IP ranges supported by the Tailscale client.
@@ -199,6 +200,12 @@ headscale:
     # -- The base domain for MagicDNS hostnames. Cannot be the same as the Headscale server's domain.
     # Refer to https://github.com/juanfont/headscale/blob/main/config-example.yaml for details.
     base_domain: ""
+
+  log:
+    # -- The log level of the Headscale server. Options are "off", "trace", "debug", "info", "warn", "error".
+    level: "info"
+    # -- The log format of the Headscale server. Options are "text" or "json".
+    format: "text"
 
   # -- The Headscale DERP configuration. Either 'externalMapUrls' or 'configMap' must be set.
   derp:
