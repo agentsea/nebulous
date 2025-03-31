@@ -34,6 +34,9 @@ data:
     {{- end }}
     dns:
       base_domain: {{ .Values.headscale.dns.base_domain }}
+    log:
+      format: {{ .Values.headscale.log.format }}
+      level: {{ .Values.headscale.log.level }}
 ---
 {{- if .Values.headscale.sqlite.createPersistentVolumeClaim }}
 apiVersion: v1
@@ -235,10 +238,10 @@ spec:
           done;
           POD_NAME=$(kubectl get pod -l app={{ include "headscale.name" . }} -n {{ include "headscale.namespace" . }} -o jsonpath='{.items[0].metadata.name}')
 
-          kubectl exec $POD_NAME -- headscale users create nebu || echo 'User nebu already exists. That is OK.';
+          kubectl exec $POD_NAME -n {{ include "headscale.namespace" . }} -- headscale users create nebu || echo 'User nebu already exists. That is OK.';
 
-          API_KEY=$(kubectl exec $POD_NAME -- headscale apikeys create --expiration 99y);
-          AUTH_KEY=$(kubectl exec $POD_NAME -- headscale preauthkeys create --user nebu --reusable);
+          API_KEY=$(kubectl exec $POD_NAME -n {{ include "headscale.namespace" . }} -- headscale apikeys create --expiration 99y);
+          AUTH_KEY=$(kubectl exec $POD_NAME -n {{ include "headscale.namespace" . }} -- headscale preauthkeys create --user nebu --reusable);
 
           kubectl create secret generic {{ .Values.tailscale.secret.name }} -n {{ include "nebulous.namespace" . }} \
             --from-literal={{ .Values.tailscale.secret.keys.apiKey }}=$API_KEY \
@@ -303,7 +306,7 @@ spec:
         paths:
           - backend:
               service:
-                name: {{ include "headscale.name" . }}
+                name: {{ include "headscale.serviceName" . }}
                 port:
                   number: {{ .Values.headscale.service.port }}
             path: /

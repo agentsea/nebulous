@@ -46,7 +46,7 @@ headscale
 {{- end }}
 
 {{- define "headscale.host" -}}
-http://{{- include "headscale.serviceName" . }}.{{- include "headscale.namespace" . }}.svc.cluster.local
+https://{{- required ".Values.headscale.domain is required" .Values.headscale.domain }}
 {{- end }}
 
 {{- define "postgres.name" -}}
