@@ -301,18 +301,10 @@ spec:
   {{- with .Values.headscale.ingress.ingressClassName }}
   ingressClassName: {{.}}
   {{- end }}
-  rules:
-    - http:
-        paths:
-          - backend:
-              service:
-                name: {{ include "headscale.serviceName" . }}
-                port:
-                  number: {{ .Values.headscale.service.port }}
-            path: /
-            pathType: Prefix
-      {{- with .Values.headscale.domain }}
-      host: {{.}}
-      {{- end }}
+  defaultBackend:
+    service:
+      name: {{ include "headscale.serviceName" . }}
+      port:
+          number: {{ .Values.headscale.service.port }}
 {{- end }}
 {{- end }}
