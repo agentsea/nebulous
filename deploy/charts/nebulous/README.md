@@ -56,10 +56,17 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | headscale.service.annotations | object | `{}` | The annotations to add to the Kubernetes service. |
 | headscale.service.nameOverride | string | `""` | Override the name of the Kubernetes service. |
 | headscale.service.port | int | `80` | The port of the Kubernetes service. |
+| headscale.service.type | string | `"ClusterIP"` | The type of the Kubernetes service. Options are "ClusterIP", "NodePort", and "LoadBalancer". |
 | headscale.sqlite.claimName | string | `"headscale-sqlite-pvc"` | The name of the PersistentVolumeClaim for the Headscale sqlite database. |
 | headscale.sqlite.createPersistentVolumeClaim | bool | `true` | If true, create a PersistentVolumeClaim for the Headscale sqlite database. |
 | headscale.sqlite.size | string | `"10Gi"` | The size of the PersistentVolumeClaim created for the Headscale sqlite database. |
 | headscale.sqlite.storageClassName | string | `""` | The storage class of the PersistentVolumeClaim created for the Headscale sqlite database. |
+| headscale.tls.letsencrypt.claimName | string | `"headscale-tls-pvc"` | The name of the PersistentVolumeClaim for the Headscale Let's Encrypt cache. |
+| headscale.tls.letsencrypt.createPersistentVolumeClaim | bool | `true` | If true, create a PersistentVolumeClaim for the Headscale Let's Encrypt cache. |
+| headscale.tls.letsencrypt.email | string | `""` | The email address for the Let's Encrypt certificate. |
+| headscale.tls.letsencrypt.hostname | string | `""` | The hostname for the Let's Encrypt certificate. Has to match the domain of the Headscale server. |
+| headscale.tls.letsencrypt.size | string | `"16Mi"` | The size of the PersistentVolumeClaim created for the Headscale Let's Encrypt cache. |
+| headscale.tls.letsencrypt.storageClassName | string | `""` | The storage class of the PersistentVolumeClaim created for the Headscale Let's Encrypt cache. |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.repository | string | `"us-docker.pkg.dev/agentsea-dev/nebulous/server"` | The repository to pull the server image from. |
 | image.tag | string | `""` | The nebulous image tag. Defaults to the Helm chart's appVersion. |
