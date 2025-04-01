@@ -239,9 +239,28 @@ headscale:
     # -- The storage class of the PersistentVolumeClaim created for the Headscale private keys.
     storageClassName: ""
 
+  tls:
+    letsencrypt:
+      # -- The hostname for the Let's Encrypt certificate. Has to match the domain of the Headscale server.
+      hostname: ""
+      # -- The email address for the Let's Encrypt certificate.
+      email: ""
+
+      # -- The name of the PersistentVolumeClaim for the Headscale Let's Encrypt cache.
+      claimName: "headscale-tls-pvc"
+
+      # -- If true, create a PersistentVolumeClaim for the Headscale Let's Encrypt cache.
+      createPersistentVolumeClaim: true
+      # -- The size of the PersistentVolumeClaim created for the Headscale Let's Encrypt cache.
+      size: "16Mi"
+      # -- The storage class of the PersistentVolumeClaim created for the Headscale Let's Encrypt cache.
+      storageClassName: ""
+
   service:
     # -- The port of the Kubernetes service.
     port: 80
+    # -- The type of the Kubernetes service. Options are "ClusterIP", "NodePort", and "LoadBalancer".
+    type: "ClusterIP"
     # -- The annotations to add to the Kubernetes service.
     annotations: { }
     # -- Override the name of the Kubernetes service.

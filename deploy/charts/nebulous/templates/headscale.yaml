@@ -11,15 +11,20 @@ data:
     server_url: {{ printf "https://%s:443" .Values.headscale.domain }}
     listen_addr: 0.0.0.0:8080
     metrics_listen_addr: 0.0.0.0:9090
-    # TLS termination happens at the Ingress level
-    # (see https://headscale.net/stable/ref/integration/reverse-proxy/#tls)
-    tls_cert_path: ""
-    tls_key_path: ""
     noise:
       private_key_path: /mnt/keys/noise_private.key
     prefixes:
       v4: 100.64.0.0/10
       v6: fd7a:115c:a1e0::/48
+    {{- if .Values.headscale.tls.letsencrypt.hostname }}
+    tls_letsencrypt_hostname: {{ .Values.headscale.tls.letsencrypt.hostname }}
+    tls_letsencrypt_email: {{ .Values.headscale.tls.letsencrypt.email }}
+    tls_letsencrypt_listen: ":http"
+    tls_letsencrypt_cache_dir: /mnt/letsencrypt
+    tls_letsencrypt_challenge_type: HTTP-01
+    {{- end }}
+    tls_cert_path: ""
+    tls_key_path: ""
     database:
       type: sqlite
     derp:
@@ -76,6 +81,25 @@ spec:
       storage: {{ .Values.headscale.privateKeys.size }}
 ---
 {{- end }}
+{{- if .Values.headscale.tls.letsencrypt.createPersistentVolumeClaim }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.headscale.tls.letsencrypt.claimName }}
+  namespace: {{ include "headscale.namespace" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.headscale.tls.letsencrypt.storageClassName }}
+  storageClassName: {{.}}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.headscale.tls.letsencrypt.size }}
+---
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -108,7 +132,11 @@ spec:
             - mountPath: /mnt/sqlite
               name: sqlite
             - mountPath: /mnt/keys
-              name: private-keys
+              name: private-key
+            {{- if .Values.headscale.tls.letsencrypt.hostname }}
+            - mountPath: /mnt/letsencrypt
+              name: tls-letsencrypt
+            {{- end }}
             {{- if .Values.headscale.derp.configMap.name }}
             - mountPath: /mnt/derp
               name: derp-config
@@ -123,6 +151,11 @@ spec:
         - name: private-keys
           persistentVolumeClaim:
             claimName: {{ .Values.headscale.privateKeys.claimName }}
+        {{- if .Values.headscale.tls.letsencrypt.hostname }}
+        - name: tls-letsencrypt
+          persistentVolumeClaim:
+            claimName: {{ .Values.headscale.tls.letsencrypt.claimName }}
+        {{- end }}
         {{- if .Values.headscale.derp.configMap.name }}
         - name: derp-config
           configMap:
@@ -267,7 +300,7 @@ spec:
     - protocol: TCP
       port: {{ .Values.headscale.service.port }}
       targetPort: 8080
-  type: ClusterIP
+  type: {{ .Values.headscale.service.type }}
 ---
 apiVersion: v1
 kind: Service
@@ -305,6 +338,6 @@ spec:
     service:
       name: {{ include "headscale.serviceName" . }}
       port:
-          number: {{ .Values.headscale.service.port }}
+        number: {{ .Values.headscale.service.port }}
 {{- end }}
 {{- end }}
