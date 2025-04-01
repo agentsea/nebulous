@@ -18,7 +18,7 @@ data:
       v6: fd7a:115c:a1e0::/48
     {{- if .Values.headscale.tls.letsencrypt.hostname }}
     tls_letsencrypt_hostname: {{ .Values.headscale.tls.letsencrypt.hostname }}
-    tls_letsencrypt_email: {{ .Values.headscale.tls.letsencrypt.email }}
+    acme_email: {{ .Values.headscale.tls.letsencrypt.email }}
     tls_letsencrypt_listen: ":http"
     tls_letsencrypt_cache_dir: /mnt/letsencrypt
     tls_letsencrypt_challenge_type: HTTP-01
@@ -81,7 +81,7 @@ spec:
       storage: {{ .Values.headscale.privateKeys.size }}
 ---
 {{- end }}
-{{- if .Values.headscale.tls.letsencrypt.createPersistentVolumeClaim }}
+{{- if and .Values.headscale.tls.letsencrypt.hostname .Values.headscale.tls.letsencrypt.createPersistentVolumeClaim }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -132,7 +132,7 @@ spec:
             - mountPath: /mnt/sqlite
               name: sqlite
             - mountPath: /mnt/keys
-              name: private-key
+              name: private-keys
             {{- if .Values.headscale.tls.letsencrypt.hostname }}
             - mountPath: /mnt/letsencrypt
               name: tls-letsencrypt
