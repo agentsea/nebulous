@@ -84,18 +84,10 @@ spec:
   {{- with .Values.redis.ingress.ingressClassName }}
   ingressClassName: {{.}}
   {{- end }}
-  rules:
-    - http:
-        paths:
-          - backend:
-              service:
-                name: {{ include "redis.name" . }}
-                port:
-                  number: {{ .Values.redis.auth.port }}
-            path: /
-            pathType: Prefix
-      {{- with .Values.redis.ingress.host }}
-      host: {{.}}
-      {{- end }}
+  defaultBackend:
+    service:
+      name: {{ include "redis.name" . }}
+      port:
+        number: {{ .Values.redis.auth.port }}
 {{- end }}
 {{- end }}
