@@ -9,9 +9,15 @@ use tracing::debug;
 pub async fn get_containers(id: Option<String>) -> Result<(), Box<dyn Error>> {
     let config = GlobalConfig::read()?;
     debug!("Config: {:?}", config);
-    let current_server = config.get_current_server_config().unwrap();
-    let server = current_server.server.as_ref().unwrap();
-    let api_key = current_server.api_key.as_ref().unwrap();
+
+    let (server, api_key) = config.get_current_server_config()
+        .and_then(|current_server| {
+            Some((
+                current_server.server.as_ref()?,
+                current_server.api_key.as_ref()?,
+            ))
+        })
+        .ok_or("No current server configuration found. Did you forget to login?")?;
 
     let bearer_token = format!("Bearer {}", api_key);
 

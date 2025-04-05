@@ -1,3 +1,4 @@
+pub mod auth_cmd;
 pub mod configure_cmd;
 pub mod create_cmd;
 pub mod daemon_cmd;

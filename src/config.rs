@@ -110,13 +110,9 @@ impl GlobalConfig {
     /// Returns `None` if `default_server` is unset or if no server
     /// with that name is found.
     pub fn get_current_server_config(&self) -> Option<&ServerConfig> {
-        if let Some(ref name) = self.current_server {
-            self.servers
-                .iter()
-                .find(|srv| srv.name.as_deref() == Some(name))
-        } else {
-            None
-        }
+        self.current_server.as_deref().and_then(|name| {
+            self.servers.iter().find(|srv| srv.name.as_deref() == Some(name))
+        })
     }
 }
 

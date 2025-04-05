@@ -7,6 +7,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use sea_orm::ColIdx;
 use serde_json::json;
 
 pub async fn auth_middleware(
@@ -14,20 +15,56 @@ pub async fn auth_middleware(
     mut request: Request,
     next: Next,
 ) -> Response {
-    // Extract the Authorization header
-    let auth_header = match request.headers().get("Authorization") {
-        Some(header) => header.to_str().unwrap_or(""),
-        None => {
-            return unauthorized_response();
+    let auth_header = {
+        match request.headers().get("Authorization") {
+            Some(header) => header.to_str().unwrap_or("").to_string(),
+            None => {
+                println!("No Authorization header");
+                return unauthorized_response();
+            }
         }
     };
 
-    println!("🔐 Making auth request to: https://auth.hub.agentlabs.xyz/v1/users/me");
+    if auth_header.starts_with("Bearer ") {
+        let token = auth_header.trim_start_matches("Bearer ");
+
+        if token.is_empty() {
+            println!("Bearer token is empty");
+            unauthorized_response()
+        } else if token.starts_with("nebu-") {
+            println!("🔐 Found Nebulous token: {}", token);
+            internal_auth(token, request, next).await
+        } else {
+            println!("🔐 Found external token: {}", token);
+            external_auth(&auth_header, request, next).await
+        }
+    } else {
+        println!("Invalid Authorization header format");
+        unauthorized_response()
+    }
+}
+
+async fn internal_auth(token: &str, request: Request, next: Next) -> Response {
+    // TODO: Validate token
+    return next.run(request).await;
+}
+
+async fn external_auth(auth_header: &String, mut request: Request, next: Next) -> Response {
+    let config = crate::config::GlobalConfig::read().unwrap();
+
+    let auth_url = config
+        .get_current_server_config()
+        .unwrap()
+        .auth_server
+        .as_ref()
+        .unwrap();
+
+    println!("🔐 Making auth request to: {}", auth_url);
 
     // Validate the token with agentlabs
     let client = reqwest::Client::new();
     let user_profile_result = client
-        .get("https://auth.hub.agentlabs.xyz/v1/users/me")
+        .get(auth_url)
         .header("Authorization", auth_header)
         .send()
         .await;

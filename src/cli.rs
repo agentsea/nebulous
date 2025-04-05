@@ -84,10 +84,28 @@ pub enum Commands {
     },
 
     /// Login to a Nebulous API server.
-    Login,
+    Login {
+        /// Address of the API server
+        #[arg(default_value = "https://api.nebulous.sh")]
+        url: String,
+
+        /// Address of the Auth server
+        #[arg(long, default_value = None)]
+        auth: Option<String>,
+
+        /// Address of the Hub
+        #[arg(long, default_value = None)]
+        hub: Option<String>,
+    },
 
     /// Execute a command inside a container.
     Exec(ExecArgs),
+
+    /// Manage authentication
+    Auth {
+        #[command(subcommand)]
+        command: AuthCommands,
+    },
 }
 
 /// Select a checkpoint.
@@ -398,3 +416,30 @@ pub enum DeleteCommands {
 /// Subcommands for the "work" command
 #[derive(Subcommand)]
 pub enum WorkCommands {}
+
+/// Subcommands for the "auth" command
+#[derive(Subcommand)]
+pub enum AuthCommands {
+    /// Manage API keys for authentication with the Nebulous API server.
+    #[command(aliases = ["api-key"])]
+    ApiKeys {
+        #[command(subcommand)]
+        action: ApiKeyActions,
+    },
+    // TODO: Add auth for tailnet
+}
+
+#[derive(Subcommand)]
+pub enum ApiKeyActions {
+    /// List API keys.
+    List,
+
+    /// Generate a new API key.
+    Generate,
+
+    /// Revoke an API key.
+    Revoke {
+        /// The ID of the API key to delete.
+        id: String,
+    },
+}
