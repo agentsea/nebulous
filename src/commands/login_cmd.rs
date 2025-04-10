@@ -1,12 +1,16 @@
 use std::error::Error;
 use std::io::{self, Write};
 
+use crate::commands::request::server_request;
 use nebulous::config::{GlobalConfig, ServerConfig};
+use nebulous::models::V1UserProfile;
 use open;
 use rpassword;
 
 pub async fn execute(
     nebu_url: String,
+    name: String,
+    update: bool,
     auth: Option<String>,
     hub: Option<String>,
 ) -> Result<(), Box<dyn Error>> {
@@ -18,6 +22,11 @@ pub async fn execute(
     let nebu_url = nebu_url.trim().trim_end_matches("/").to_string();
 
     let mut config = GlobalConfig::read()?;
+
+    if config.contains_server(&name) && !update {
+        eprintln!("Server with name '{}' already exists. Please choose a different name or set --update flag.", name);
+        return Ok(());
+    }
 
     if auth.is_some() && hub.is_some() {
         let auth_url = auth.unwrap().trim().trim_end_matches("/").to_string();
@@ -35,13 +44,15 @@ pub async fn execute(
         io::stdout().flush()?;
         let api_key = rpassword::read_password()?;
 
-        config.servers.push(ServerConfig {
-            name: Some("cloud".to_string()),
-            server: Some(nebu_url),
-            api_key: Some(api_key),
-            auth_server: Some(auth_url),
-        });
-        config.current_server = Some("cloud".to_string());
+        config.update_server(
+            ServerConfig {
+                name,
+                server: Some(nebu_url),
+                api_key: Some(api_key),
+                auth_server: Some(auth_url),
+            },
+            true,
+        );
     } else {
         println!(
             r#"Configuring the Nebulous CLI to use the integrated auth server.
@@ -63,18 +74,25 @@ When you're running nebulous on Kubernetes, use:
         io::stdout().flush()?;
         let api_key = rpassword::read_password()?;
 
-        config.servers.push(ServerConfig {
-            name: Some("nebu".to_string()),
-            server: Some(nebu_url),
-            api_key: Some(api_key),
-            auth_server: None,
-        });
-        config.current_server = Some("nebu".to_string());
+        config.update_server(
+            ServerConfig {
+                name,
+                server: Some(nebu_url),
+                api_key: Some(api_key),
+                auth_server: None,
+            },
+            true,
+        );
     }
+
+    let response = server_request("/v1/users/me", reqwest::Method::GET).await?;
+    let profile: V1UserProfile = response.json().await?;
+    format!(
+        "\nSuccessfully logged into '{}' as '{}'",
+        config.current_server.clone().unwrap(),
+        profile.email
+    );
+
     config.write()?;
-
-    // TODO: Check that we can actually reach and authenticate with the server
-
-    println!("\nLogin successful!");
     Ok(())
 }

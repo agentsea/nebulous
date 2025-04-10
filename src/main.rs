@@ -4,8 +4,8 @@ mod models;
 use std::path::Path;
 
 use crate::cli::{
-    ApiKeyActions, AuthCommands, Cli, Commands, CreateCommands, DeleteCommands, GetCommands,
-    ProxyCommands, SelectCommands,
+    ApiKeyActions, AuthCommands, Cli, Commands, ConfigCommands, CreateCommands,
+    CurrentConfigActions, DeleteCommands, GetCommands, ProxyCommands, SelectCommands,
 };
 use clap::Parser;
 use cli::SyncCommands;
@@ -125,8 +125,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Commands::Logs { name, namespace } => {
             commands::log_cmd::fetch_container_logs(name, namespace).await?;
         }
-        Commands::Login { url, auth, hub } => {
-            commands::login_cmd::execute(url, auth, hub).await?;
+        Commands::Login {
+            url,
+            name,
+            update,
+            auth,
+            hub,
+        } => {
+            commands::login_cmd::execute(url, name, update, auth, hub).await?;
         }
         Commands::Exec(args) => {
             commands::exec_cmd::exec_cmd(args).await?;
@@ -144,6 +150,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
                 ApiKeyActions::Revoke { id } => {
                     commands::auth_cmd::revoke_api_key(&id).await?;
+                }
+            },
+        },
+        Commands::Config { command } => match command {
+            ConfigCommands::Show => {
+                commands::config_cmd::show_config().await?;
+            }
+            ConfigCommands::Current { action } => match action {
+                CurrentConfigActions::Show => {
+                    commands::config_cmd::show_current().await?;
+                }
+                CurrentConfigActions::Set { server } => {
+                    commands::config_cmd::set_current(&server).await?;
                 }
             },
         },

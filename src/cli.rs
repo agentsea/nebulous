@@ -1,6 +1,6 @@
 use clap::{arg, ArgAction, Args, Parser, Subcommand};
 
-/// Orign CLI.
+/// Nebulous CLI
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
@@ -97,6 +97,14 @@ pub enum Commands {
         #[arg(default_value = "http://127.0.0.1")]
         url: String,
 
+        /// Name of the server
+        #[arg(long, default_value = "nebulous")]
+        name: String,
+
+        /// Update the server if it already exists
+        #[arg(long, default_value_t = false)]
+        update: bool,
+
         /// Address of the Auth server
         #[arg(long, default_value = None)]
         auth: Option<String>,
@@ -113,6 +121,13 @@ pub enum Commands {
     Auth {
         #[command(subcommand)]
         command: AuthCommands,
+    },
+
+    /// Manage configuration
+    Config {
+        /// The action to perform.
+        #[command(subcommand)]
+        command: ConfigCommands,
     },
 }
 
@@ -455,5 +470,29 @@ pub enum ApiKeyActions {
     Revoke {
         /// The ID of the API key to delete.
         id: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum ConfigCommands {
+    /// Show the full configuration
+    Show,
+
+    /// Manage the current configuration
+    Current {
+        /// The action to perform.
+        #[command(subcommand)]
+        action: CurrentConfigActions,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum CurrentConfigActions {
+    /// Show the current configuration
+    Show,
+    /// Set the current configuration
+    Set {
+        /// The name of the server to set as current
+        server: String,
     },
 }

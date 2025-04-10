@@ -14,8 +14,7 @@ pub struct GlobalConfig {
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct ServerConfig {
-    /// Optional identifier for your server config.
-    pub name: Option<String>,
+    pub name: String,
     pub api_key: Option<String>,
     pub server: Option<String>,
     pub auth_server: Option<String>,
@@ -37,7 +36,17 @@ impl GlobalConfig {
             GlobalConfig::default()
         };
 
-        // Collect environment variables (NO fallback defaults here)
+        // Only write if the file didn't already exist
+        if !path_exists {
+            config.write()?;
+        }
+
+        config.create_config_from_environment();
+
+        Ok(config)
+    }
+
+    fn create_config_from_environment(&mut self) {
         let env_api_key = env::var("NEBU_API_KEY")
             .or_else(|_| env::var("AGENTSEA_API_KEY"))
             .ok();
@@ -48,47 +57,29 @@ impl GlobalConfig {
             .or_else(|_| env::var("AGENTSEA_AUTH_SERVER"))
             .ok();
 
-        // Only proceed if all three environment variables are present.
         if let (Some(env_api_key), Some(env_server), Some(env_auth_server)) =
             (env_api_key, env_server, env_auth_server)
         {
             // Find a matching server (all three fields match).
-            let found_server = config.servers.iter_mut().find(|srv| {
+            let found_server = self.servers.iter_mut().find(|srv| {
                 srv.api_key.as_deref() == Some(&env_api_key)
                     && srv.server.as_deref() == Some(&env_server)
                     && srv.auth_server.as_deref() == Some(&env_auth_server)
             });
 
             // If found, use that. If not, create a new entry.
-            let server_name = "env-based-server".to_string();
-            let chosen_name = if let Some(srv) = found_server {
-                // Make sure it has a name, so we can set default_server to it
-                if srv.name.is_none() {
-                    srv.name = Some(server_name.clone());
-                }
-                srv.name.clone().unwrap()
+            if let Some(srv) = found_server {
+                self.current_server = Some(srv.name.clone());
             } else {
-                // Need to create a new server entry
                 let new_server = ServerConfig {
-                    name: Some(server_name.clone()),
+                    name: "env-based-server".to_string(),
                     api_key: Some(env_api_key),
                     server: Some(env_server),
                     auth_server: Some(env_auth_server),
                 };
-                config.servers.push(new_server);
-                server_name
+                self.update_server(new_server, true);
             };
-
-            // Set that server as the “current” or default
-            config.current_server = Some(chosen_name);
         }
-
-        // Only write if the file didn't already exist
-        if !path_exists {
-            config.write()?;
-        }
-
-        Ok(config)
     }
 
     /// Write the current GlobalConfig to disk (YAML).
@@ -106,15 +97,61 @@ impl GlobalConfig {
         Ok(())
     }
 
-    /// Get the server config for the current `default_server`.
-    /// Returns `None` if `default_server` is unset or if no server
-    /// with that name is found.
+    /// Get the server config for the current server.
     pub fn get_current_server_config(&self) -> Option<&ServerConfig> {
-        self.current_server.as_deref().and_then(|name| {
-            self.servers
-                .iter()
-                .find(|srv| srv.name.as_deref() == Some(name))
-        })
+        self.current_server
+            .as_deref()
+            .and_then(|name| self.servers.iter().find(|srv| srv.name == name))
+    }
+
+    /// Get the server config for a specific server.
+    pub fn get_server(&self, name: &str) -> Option<&ServerConfig> {
+        self.servers.iter().find(|srv| srv.name == name)
+    }
+
+    /// Remove a server from the config.
+    pub fn drop_server(&mut self, name: &str) {
+        if let Some(pos) = self.servers.iter().position(|srv| srv.name == name) {
+            self.servers.remove(pos);
+
+            // If the removed server was the current one, clear it.
+            if self.current_server == Some(name.to_string()) {
+                self.current_server = None;
+            }
+        }
+    }
+
+    /// Update or add a server config.
+    pub fn update_server(&mut self, new_config: ServerConfig, make_current: bool) {
+        if let Some(pos) = self
+            .servers
+            .iter()
+            .position(|srv| srv.name == new_config.name)
+        {
+            self.servers[pos] = new_config;
+        } else {
+            if make_current {
+                self.current_server = Some(new_config.name.clone());
+            }
+            self.servers.push(new_config);
+        }
+    }
+
+    /// Add a server.
+    pub fn add_server(&mut self, config: ServerConfig, make_current: bool) {
+        if self.contains_server(&config.name) {
+            eprintln!(
+                "Server with name '{}' already exists. Please choose a different name.",
+                config.name
+            );
+            return;
+        }
+        self.update_server(config, make_current);
+    }
+
+    /// Check if a server with the given name exists.
+    pub fn contains_server(&self, name: &str) -> bool {
+        self.servers.iter().any(|srv| srv.name == name)
     }
 }
 
