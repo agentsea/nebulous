@@ -29,10 +29,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Commands::Serve {
             host,
             port,
-            internal_auth,
+            disable_internal_auth,
             auth_port,
+            docker,
         } => {
-            commands::serve_cmd::execute(host, port, internal_auth, auth_port).await?;
+            if docker {
+                commands::serve_cmd::launch_docker(port, disable_internal_auth, auth_port).await?;
+            } else {
+                commands::serve_cmd::launch_server(host, port, disable_internal_auth, auth_port)
+                    .await?;
+            }
         }
         Commands::Sync { command } => match command {
             SyncCommands::Volumes {

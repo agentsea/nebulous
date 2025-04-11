@@ -87,7 +87,7 @@ When you're running nebulous on Kubernetes, use:
 
     let response = server_request("/v1/users/me", reqwest::Method::GET).await?;
     let profile: V1UserProfile = response.json().await?;
-    format!(
+    println!(
         "\nSuccessfully logged into '{}' as '{}'",
         config.current_server.clone().unwrap(),
         profile.email

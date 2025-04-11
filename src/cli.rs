@@ -43,7 +43,7 @@ pub enum Commands {
 
     /// Serve the API.
     Serve {
-        /// The address to bind to.
+        /// The address to bind to. Ignored when launching through docker.
         #[arg(long, default_value = "127.0.0.1")]
         host: String,
 
@@ -51,13 +51,17 @@ pub enum Commands {
         #[arg(long, default_value_t = 3000)]
         port: u16,
 
-        /// Disable internal auth server
-        #[arg(long, default_value_t = true)]
-        internal_auth: bool,
+        /// Disable the internal auth server
+        #[arg(long, default_value_t = false)]
+        disable_internal_auth: bool,
 
         /// The port to bind the internal auth server to.
         #[arg(long, default_value_t = 8080)]
         auth_port: u16,
+
+        /// Launch through Docker
+        #[arg(long, default_value_t = false)]
+        docker: bool,
     },
 
     /// Proxy services.
