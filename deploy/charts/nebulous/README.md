@@ -1,6 +1,6 @@
 # nebulous
 
-![Version: 0.2.1](https://img.shields.io/badge/Version-0.2.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.61](https://img.shields.io/badge/AppVersion-0.1.61-informational?style=flat-square)
+![Version: 0.2.1](https://img.shields.io/badge/Version-0.2.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.75](https://img.shields.io/badge/AppVersion-0.1.75-informational?style=flat-square)
 
 A cross-cloud container orchestrator for AI workloads
 
@@ -100,10 +100,6 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | redis.auth | object | `{"database":0,"host":"","password":"nebulous","port":6379}` | Manual configuration of the Redis connection. Except for 'host', this information is also used if 'create' is true. |
 | redis.create | bool | `false` | If enabled, create a Redis deployment and service. Not recommended for production. |
 | redis.imageTag | string | `"latest"` | The redis image tag. Ignored unless 'create' is true. |
-| redis.ingress.annotations | object | `{}` | Annotations to add to the Ingress resource. |
-| redis.ingress.enabled | bool | `false` | If enabled, create an Ingress resource. Ignored unless 'create' is true. |
-| redis.ingress.host | string | `""` | The host field of the Ingress rule. |
-| redis.ingress.ingressClassName | string | `""` | The ingress class. |
 | redis.secret.keys.connection_string | string | `"CONNECTION_STRING"` | The key in the secret containing the Redis connection string. |
 | redis.secret.keys.password | string | `"PASSWORD"` | The key in the secret containing the Redis password. |
 | redis.secret.name | string | `"redis-secret"` | Name of the secret with the Redis connection string and password. |
