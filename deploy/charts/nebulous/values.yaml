@@ -56,8 +56,6 @@ tailscale:
     # -- Name of the secret with the Redis connection string and password.
     name: "tailscale-secret"
     keys:
-      # -- The key in the secret containing the Tailscale host.
-      loginServer: "LOGIN_SERVER"
       # -- The key in the secret containing the Tailscale API key
       apiKey: "API_KEY"
       # -- The key in the secret containing the Tailscale auth key

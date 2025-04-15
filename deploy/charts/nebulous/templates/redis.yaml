@@ -30,7 +30,31 @@ spec:
       labels:
         app: {{ include "redis.name" . }}
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          env:
+            - name: TS_STATE_DIR
+              value: /var/lib/tailscale
+            - name: TS_USERSPACE
+              value: "true"
+            - name: TS_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tailscale.secret.name }}
+                  key: {{ .Values.tailscale.secret.keys.authKey }}
+            - name: TS_EXTRA_ARGS
+              value: --login-server {{ include "tailscale.loginServer" . }}
+          volumeMounts:
+            - name: dev-net-tun
+              mountPath: /dev/net/tun
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
         - name: redis
           image: "redis:{{ .Values.redis.imageTag }}"
           command:
@@ -47,6 +71,11 @@ spec:
                   key: {{ .Values.redis.secret.keys.password }}
           ports:
             - containerPort: 6379
+      volumes:
+        - name: dev-net-tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
 ---
 apiVersion: v1
 kind: Service
