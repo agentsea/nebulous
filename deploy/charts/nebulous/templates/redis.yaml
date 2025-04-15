@@ -67,27 +67,4 @@ spec:
       port: {{ .Values.redis.auth.port }}
       targetPort: 6379
   type: ClusterIP
----
-{{- if .Values.redis.ingress.enabled }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ include "redis.serviceName" . }}
-  namespace: {{ include "nebulous.namespace" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-  {{- with .Values.redis.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  {{- with .Values.redis.ingress.ingressClassName }}
-  ingressClassName: {{.}}
-  {{- end }}
-  defaultBackend:
-    service:
-      name: {{ include "redis.name" . }}
-      port:
-        number: {{ .Values.redis.auth.port }}
-{{- end }}
 {{- end }}

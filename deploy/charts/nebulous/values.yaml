@@ -167,17 +167,6 @@ redis:
     # -- Override the name of the Kubernetes service.
     nameOverride: ""
 
-  ingress:
-    # -- If enabled, create an Ingress resource. Ignored unless 'create' is true.
-    enabled: false
-
-    # -- Annotations to add to the Ingress resource.
-    annotations: { }
-    # -- The ingress class.
-    ingressClassName: ""
-    # -- The host field of the Ingress rule.
-    host: ""
-
 ## Headscale configuration
 headscale:
   # -- If true, create a Headscale deployment and service. Overrides tailscale configuration. Not recommended for production.
