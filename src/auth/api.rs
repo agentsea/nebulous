@@ -72,7 +72,7 @@ pub async fn validate_api_key(
         let parts: Vec<&str> = full_key.split('.').collect();
         if parts.len() == 2 {
             let (id, key) = (parts[0], parts[1]);
-            if let Some(mut api_key) = db::Entity::find_by_id(id).one(db_conn).await? {
+            if let Some(api_key) = db::Entity::find_by_id(id).one(db_conn).await? {
                 if api_key.revoked_at.is_some() {
                     return Ok(false);
                 }

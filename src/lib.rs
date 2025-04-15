@@ -55,44 +55,7 @@ pub async fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> 
     // Initialize the appropriate message queue based on configuration
     let message_queue = match CONFIG.message_queue_type.to_lowercase().as_str() {
         "redis" => {
-            let redis_url = match &CONFIG.redis_url {
-                Some(url) if !url.is_empty() => {
-                    // Redis URL exists, so use it directly but also parse it to set env vars
-                    if let Ok(parsed_url) = Url::parse(url) {
-                        // Extract and set host
-                        if let Some(host) = parsed_url.host_str() {
-                            env::set_var("REDIS_HOST", host);
-                        }
-
-                        // Extract and set port
-                        if let Some(port) = parsed_url.port() {
-                            env::set_var("REDIS_PORT", port.to_string());
-                        } else {
-                            // Default redis port if not specified in URL
-                            env::set_var("REDIS_PORT", "6379");
-                        }
-
-                        // Extract and set password if present
-                        if let Some(password) = parsed_url.password() {
-                            env::set_var("REDIS_PASSWORD", password);
-                        }
-                    }
-
-                    url.clone()
-                }
-                _ => {
-                    // Redis URL not present or empty, build from components
-                    let host = &CONFIG.redis_host;
-                    let port = &CONFIG.redis_port;
-
-                    match &CONFIG.redis_password {
-                        Some(password) if !password.is_empty() => {
-                            format!("redis://:{}@{}:{}", password, host, port)
-                        }
-                        _ => format!("redis://{}:{}", host, port),
-                    }
-                }
-            };
+            let redis_url = &CONFIG.redis_url;
 
             // Create the Redis client using the constructed URL
             let redis_client = Arc::new(redis::Client::open(redis_url.as_str())?);
@@ -100,17 +63,6 @@ pub async fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> 
             MessageQueue::Redis {
                 client: redis_client,
             }
-        }
-        "kafka" => {
-            let mut client_config = ClientConfig::new();
-            let kafka_config = client_config
-                .set("bootstrap.servers", &CONFIG.kafka_bootstrap_servers)
-                .set("message.timeout.ms", &CONFIG.kafka_timeout_ms);
-
-            let producer = Arc::new(kafka_config.clone().create::<FutureProducer>()?);
-            let admin = Arc::new(kafka_config.create::<AdminClient<_>>()?);
-
-            MessageQueue::Kafka { producer, admin }
         }
         unsupported => {
             return Err(format!("Unsupported message queue type: {}", unsupported).into())

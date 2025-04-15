@@ -135,28 +135,12 @@ impl StandardProcessor {
         });
 
         // Redis URL with credentials - prioritize REDIS_URL if set
-        let redis_url = match CONFIG.redis_url.clone() {
-            Some(url) => url,
-            None => format!(
-                "redis://{}:{}@{}:{}",
-                username, password, CONFIG.redis_host, CONFIG.redis_port
-            ),
-        };
+        let redis_url = CONFIG.get_redis_url(username, password);
 
         // Add all Redis env vars
         env.push(V1EnvVar {
             key: "REDIS_URL".to_string(),
             value: Some(redis_url),
-            secret_name: None,
-        });
-        env.push(V1EnvVar {
-            key: "REDIS_HOST".to_string(),
-            value: Some(CONFIG.redis_host.clone()),
-            secret_name: None,
-        });
-        env.push(V1EnvVar {
-            key: "REDIS_PORT".to_string(),
-            value: Some(CONFIG.redis_port.clone()),
             secret_name: None,
         });
         env.push(V1EnvVar {
@@ -832,7 +816,7 @@ impl ProcessorPlatform for StandardProcessor {
 
         // Assume a function exists to create the key using user profile
         // We need the auth server URL, user token, desired agent ID, name, and duration.
-        let config = crate::config::GlobalConfig::read()
+        let config = crate::config::ClientConfig::read()
             .map_err(|e| format!("Failed to read global config: {}", e))?;
         let auth_server = config
             .get_current_server_config()
@@ -986,7 +970,7 @@ impl ProcessorPlatform for StandardProcessor {
             .decrypt_value()
             .map_err(|e| format!("Failed to decrypt agent key: {}", e))?;
 
-        let config = crate::config::GlobalConfig::read()
+        let config = crate::config::ClientConfig::read()
             .map_err(|e| format!("Failed to read global config: {}", e))?;
         let auth_server = config
             .get_current_server_config()

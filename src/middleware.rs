@@ -1,4 +1,5 @@
 use crate::auth;
+use crate::config::CONFIG;
 use crate::models::V1UserProfile;
 use crate::AppState;
 use axum::{
@@ -86,14 +87,11 @@ async fn internal_auth(
 }
 
 async fn external_auth(auth_header: &String, mut request: Request, next: Next) -> Response {
-    let config = crate::config::GlobalConfig::read().unwrap();
-
-    let auth_url = config
-        .get_current_server_config()
-        .unwrap()
-        .auth_server
-        .as_ref()
-        .unwrap();
+    let auth_url = CONFIG
+        .auth
+        .url
+        .clone()
+        .expect("No external auth URL configured.");
 
     println!("🔐 Making auth request to: {}", auth_url);
 

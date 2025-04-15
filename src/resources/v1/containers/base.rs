@@ -1,6 +1,6 @@
 use crate::agent::agent::create_agent_key;
 use crate::agent::aws::create_s3_scoped_user;
-use crate::config::GlobalConfig;
+use crate::config::ClientConfig;
 use crate::config::CONFIG;
 use crate::entities::containers;
 use crate::handlers::v1::volumes::ensure_volume;
@@ -184,7 +184,7 @@ pub trait ContainerPlatform {
         model: &containers::Model,
         db: &DatabaseConnection,
     ) -> HashMap<String, String> {
-        let config = GlobalConfig::read().unwrap();
+        let config = ClientConfig::read().unwrap();
         let mut env = HashMap::new();
 
         debug!("Getting agent key");
@@ -315,18 +315,20 @@ pub trait ContainerPlatform {
 
     async fn get_tailscale_client(&self) -> TailscaleClient {
         let tailscale_api_key = CONFIG
-            .tailscale_api_key
+            .tailscale
             .clone()
-            .expect("TAILSCALE_API_KEY not found in config");
+            .expect("No Tailscale configuration")
+            .api_key;
         debug!("Tailscale key: {}", tailscale_api_key);
         TailscaleClient::new(tailscale_api_key)
     }
 
     async fn get_tailscale_device_key(&self, model: &containers::Model) -> String {
         let tailnet = CONFIG
-            .tailscale_tailnet
+            .tailscale
             .clone()
-            .expect("tailscale_tailnet not found in config");
+            .expect("No Tailscale configuration")
+            .tailnet;
 
         debug!("Tailnet: {}", tailnet);
 
@@ -386,7 +388,7 @@ pub trait ContainerPlatform {
         &self,
         user_profile: &V1UserProfile,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        let config = crate::config::GlobalConfig::read().unwrap();
+        let config = crate::config::ClientConfig::read().unwrap();
 
         debug!("[DEBUG] get_agent_key: Entering function");
         debug!("[DEBUG] get_agent_key: user_profile = {:?}", user_profile);

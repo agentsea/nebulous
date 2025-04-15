@@ -1,5 +1,3 @@
-// src/commands/serve.rs
-
 use nebulous::create_app;
 use nebulous::create_app_state;
 use nebulous::proxy::server::start_proxy;

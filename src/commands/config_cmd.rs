@@ -1,7 +1,7 @@
 use std::error::Error;
 
 pub async fn show_config() -> Result<(), Box<dyn Error>> {
-    match nebulous::config::GlobalConfig::read() {
+    match nebulous::config::ClientConfig::read() {
         Ok(config) => match serde_yaml::to_string(&config) {
             Ok(yaml) => println!("{}", yaml),
             Err(e) => eprintln!("Error formatting config as YAML: {}", e),
@@ -14,7 +14,7 @@ pub async fn show_config() -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn show_current() -> Result<(), Box<dyn Error>> {
-    match nebulous::config::GlobalConfig::read() {
+    match nebulous::config::ClientConfig::read() {
         Ok(config) => {
             if let Some(current_server) = config.get_current_server_config() {
                 let mut current_server = current_server.clone();
@@ -35,7 +35,7 @@ pub async fn show_current() -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn set_current(name: &str) -> Result<(), Box<dyn Error>> {
-    match nebulous::config::GlobalConfig::read() {
+    match nebulous::config::ClientConfig::read() {
         Ok(mut config) => {
             if let Some(server_config) = config.get_server(name) {
                 config.current_server = Some(server_config.name.clone());

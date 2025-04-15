@@ -7,20 +7,20 @@ use std::fs;
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
-pub struct GlobalConfig {
-    pub servers: Vec<ServerConfig>,
+pub struct ClientConfig {
+    pub servers: Vec<ClientServerConfig>,
     pub current_server: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
-pub struct ServerConfig {
+pub struct ClientServerConfig {
     pub name: String,
     pub api_key: Option<String>,
     pub server: Option<String>,
     pub auth_server: Option<String>,
 }
 
-impl GlobalConfig {
+impl ClientConfig {
     /// Read the config from disk, or create a default one.
     /// Then ensure that we either find or create a matching server in `self.servers`
     /// based on environment variables, and set that as the `default_server`.
@@ -31,9 +31,9 @@ impl GlobalConfig {
         // Load or create default
         let mut config = if path_exists {
             let yaml = fs::read_to_string(&config_path)?;
-            serde_yaml::from_str::<GlobalConfig>(&yaml)?
+            serde_yaml::from_str::<ClientConfig>(&yaml)?
         } else {
-            GlobalConfig::default()
+            ClientConfig::default()
         };
 
         // Only write if the file didn't already exist
@@ -71,7 +71,7 @@ impl GlobalConfig {
             if let Some(srv) = found_server {
                 self.current_server = Some(srv.name.clone());
             } else {
-                let new_server = ServerConfig {
+                let new_server = ClientServerConfig {
                     name: "env-based-server".to_string(),
                     api_key: Some(env_api_key),
                     server: Some(env_server),
@@ -98,14 +98,14 @@ impl GlobalConfig {
     }
 
     /// Get the server config for the current server.
-    pub fn get_current_server_config(&self) -> Option<&ServerConfig> {
+    pub fn get_current_server_config(&self) -> Option<&ClientServerConfig> {
         self.current_server
             .as_deref()
             .and_then(|name| self.servers.iter().find(|srv| srv.name == name))
     }
 
     /// Get the server config for a specific server.
-    pub fn get_server(&self, name: &str) -> Option<&ServerConfig> {
+    pub fn get_server(&self, name: &str) -> Option<&ClientServerConfig> {
         self.servers.iter().find(|srv| srv.name == name)
     }
 
@@ -122,7 +122,7 @@ impl GlobalConfig {
     }
 
     /// Update or add a server config.
-    pub fn update_server(&mut self, new_config: ServerConfig, make_current: bool) {
+    pub fn update_server(&mut self, new_config: ClientServerConfig, make_current: bool) {
         if let Some(pos) = self
             .servers
             .iter()
@@ -138,7 +138,7 @@ impl GlobalConfig {
     }
 
     /// Add a server.
-    pub fn add_server(&mut self, config: ServerConfig, make_current: bool) {
+    pub fn add_server(&mut self, config: ClientServerConfig, make_current: bool) {
         if self.contains_server(&config.name) {
             eprintln!(
                 "Server with name '{}' already exists. Please choose a different name.",
@@ -163,40 +163,153 @@ fn get_config_file_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Config {
-    pub message_queue_type: String,
-    pub kafka_bootstrap_servers: String,
-    pub kafka_timeout_ms: String,
-    pub redis_host: String,
-    pub redis_port: String,
-    pub redis_password: Option<String>,
-    pub redis_url: Option<String>,
+pub struct ServerConfig {
     pub database_url: String,
-    pub tailscale_api_key: Option<String>,
-    pub tailscale_tailnet: Option<String>,
+    pub message_queue_type: String,
+    pub redis_url: String,
+
+    pub tailscale: Option<TailscaleConfig>,
+
+    pub auth: ServerAuthConfig,
+
     pub bucket_name: String,
     pub bucket_region: String,
     pub root_owner: String,
 }
 
-impl Config {
+#[derive(Debug, Clone)]
+pub struct DatabaseConfig {
+    pub host: String,
+    pub port: u16,
+    pub user: String,
+    pub password: Option<String>,
+    pub name: String,
+}
+
+impl DatabaseConfig {
     pub fn new() -> Self {
         dotenv().ok();
 
         Self {
-            message_queue_type: env::var("MESSAGE_QUEUE_TYPE")
-                .unwrap_or_else(|_| "redis".to_string()),
-            kafka_bootstrap_servers: env::var("KAFKA_BOOTSTRAP_SERVERS")
-                .unwrap_or_else(|_| "localhost:9092".to_string()),
-            kafka_timeout_ms: env::var("KAFKA_TIMEOUT_MS").unwrap_or_else(|_| "5000".to_string()),
-            redis_host: env::var("REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
-            redis_port: env::var("REDIS_PORT").unwrap_or_else(|_| "6379".to_string()),
-            redis_password: env::var("REDIS_PASSWORD").ok(),
-            redis_url: env::var("REDIS_URL").ok(),
-            database_url: env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "sqlite://.data/data.db".to_string()),
-            tailscale_api_key: env::var("TAILSCALE_API_KEY").ok(),
-            tailscale_tailnet: env::var("TAILSCALE_TAILNET").ok(),
+            host: env::var("DATABASE_HOST").unwrap_or_else(|_| "localhost".to_string()),
+            port: env::var("DATABASE_PORT")
+                .unwrap_or_else(|_| "5432".to_string())
+                .parse()
+                .expect("Invalid value for DATABASE_PORT."),
+            user: env::var("DATABASE_USER").unwrap_or_else(|_| "postgres".to_string()),
+            password: env::var("DATABASE_PASSWORD").ok(),
+            name: env::var("DATABASE_NAME").unwrap_or_else(|_| "postgres".to_string()),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RedisConfig {
+    pub host: String,
+    pub port: u16,
+    pub user: Option<String>,
+    pub password: Option<String>,
+    pub database: u16,
+}
+
+impl RedisConfig {
+    pub fn new() -> Self {
+        dotenv().ok();
+
+        Self {
+            host: env::var("REDIS_HOST").unwrap_or_else(|_| "localhost".to_string()),
+            port: env::var("REDIS_PORT")
+                .unwrap_or_else(|_| "6379".to_string())
+                .parse()
+                .expect("Invalid value for REDIS_PORT."),
+            user: env::var("REDIS_USER").ok(),
+            password: env::var("REDIS_PASSWORD").ok(),
+            database: env::var("REDIS_DATABASE")
+                .unwrap_or_else(|_| "0".to_string())
+                .parse()
+                .expect("Invalid value for REDIS_DATABASE."),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TailscaleConfig {
+    pub api_key: String,
+    pub tailnet: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ServerAuthConfig {
+    pub internal: bool,
+    pub url: Option<String>,
+}
+
+impl ServerAuthConfig {
+    pub fn new() -> Self {
+        dotenv().ok();
+
+        let url = env::var("NEBU_AUTH_URL").ok();
+
+        Self {
+            internal: true,
+            url,
+        }
+    }
+}
+
+impl ServerConfig {
+    pub fn new() -> Self {
+        dotenv().ok();
+
+        let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
+            let db_config = DatabaseConfig::new();
+            format!(
+                "postgres://{}:{}@{}:{}/{}",
+                db_config.user,
+                db_config.password.as_deref().unwrap_or(""),
+                db_config.host,
+                db_config.port,
+                db_config.name
+            )
+        });
+
+        let message_queue_type = match env::var("MESSAGE_QUEUE_TYPE") {
+            Ok(queue_type) => {
+                if queue_type == "redis" {
+                    queue_type
+                } else {
+                    panic!("Invalid MESSAGE_QUEUE_TYPE. Only 'redis' is supported. (You can safely omit this value.)")
+                }
+            }
+            Err(_) => "redis".to_string(),
+        };
+
+        let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| {
+            let redis_config = RedisConfig::new();
+            format!(
+                "redis://{}:{}@{}:{}/{}",
+                redis_config.user.as_deref().unwrap_or(""),
+                redis_config.password.as_deref().unwrap_or(""),
+                redis_config.host,
+                redis_config.port,
+                redis_config.database
+            )
+        });
+
+        let tailscale = match (env::var("TS_API_KEY"), env::var("TS_TAILNET")) {
+            (Ok(api_key), Ok(tailnet)) => Some(TailscaleConfig { api_key, tailnet }),
+            _ => None,
+        };
+
+        let auth = ServerAuthConfig::new();
+
+        Self {
+            database_url,
+            message_queue_type,
+            redis_url,
+            tailscale,
+            auth,
+            // TODO: Move this to dedicated config
             bucket_name: env::var("NEBU_BUCKET_NAME")
                 .unwrap_or_else(|_| panic!("NEBU_BUCKET_NAME environment variable must be set")),
             bucket_region: env::var("NEBU_BUCKET_REGION")
@@ -205,6 +318,23 @@ impl Config {
                 .unwrap_or_else(|_| panic!("NEBU_ROOT_OWNER environment variable must be set")),
         }
     }
+    pub fn get_redis_url(&self, user: String, password: String) -> String {
+        let protocol = self
+            .redis_url
+            .clone()
+            .split("://")
+            .next()
+            .unwrap_or_else(|| panic!("Invalid Redis URL {}", self.redis_url))
+            .to_string();
+        let base_url = self
+            .redis_url
+            .clone()
+            .split("@")
+            .nth(1)
+            .unwrap_or_else(|| panic!("Invalid Redis URL {}", self.redis_url))
+            .to_string();
+        format!("{protocol}://{user}:{password}@{base_url}")
+    }
 }
 // Global static CONFIG instance
-pub static CONFIG: Lazy<Config> = Lazy::new(Config::new);
+pub static CONFIG: Lazy<ServerConfig> = Lazy::new(ServerConfig::new);

@@ -2,7 +2,7 @@ use std::error::Error;
 use std::io::{self, Write};
 
 use crate::commands::request::server_request;
-use nebulous::config::{GlobalConfig, ServerConfig};
+use nebulous::config::{ClientConfig, ClientServerConfig};
 use nebulous::models::V1UserProfile;
 use open;
 use rpassword;
@@ -21,7 +21,7 @@ pub async fn execute(
 
     let nebu_url = nebu_url.trim().trim_end_matches("/").to_string();
 
-    let mut config = GlobalConfig::read()?;
+    let mut config = ClientConfig::read()?;
 
     if config.contains_server(&name) && !update {
         eprintln!("Server with name '{}' already exists. Please choose a different name or set --update flag.", name);
@@ -45,7 +45,7 @@ pub async fn execute(
         let api_key = rpassword::read_password()?;
 
         config.update_server(
-            ServerConfig {
+            ClientServerConfig {
                 name,
                 server: Some(nebu_url),
                 api_key: Some(api_key),
@@ -75,7 +75,7 @@ When you're running nebulous on Kubernetes, use:
         let api_key = rpassword::read_password()?;
 
         config.update_server(
-            ServerConfig {
+            ClientServerConfig {
                 name,
                 server: Some(nebu_url),
                 api_key: Some(api_key),
