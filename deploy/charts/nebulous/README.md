@@ -130,6 +130,5 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | tailscale.loginServer | string | `"https://login.tailscale.com"` | The Tailscale host to connect to. If headscale.enabled is true, this is ignored. |
 | tailscale.secret.keys.apiKey | string | `"API_KEY"` | The key in the secret containing the Tailscale API key |
 | tailscale.secret.keys.authKey | string | `"AUTH_KEY"` | The key in the secret containing the Tailscale auth key |
-| tailscale.secret.keys.loginServer | string | `"LOGIN_SERVER"` | The key in the secret containing the Tailscale host. |
 | tailscale.secret.name | string | `"tailscale-secret"` | Name of the secret with the Redis connection string and password. |
 

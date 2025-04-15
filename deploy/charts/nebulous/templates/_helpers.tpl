@@ -49,6 +49,14 @@ headscale
 https://{{- required ".Values.headscale.domain is required" .Values.headscale.domain }}
 {{- end }}
 
+{{- define "tailscale.loginServer" }}
+{{- if .Values.headscale.create }}
+{{- include "headscale.host" . }}
+{{- else }}
+{{- required ".Values.tailscale.loginServer is required" .Values.tailscale.loginServer }}
+{{- end }}
+{{- end }}
+
 {{- define "postgres.name" -}}
 postgres
 {{- end }}
