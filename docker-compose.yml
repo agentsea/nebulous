@@ -6,6 +6,12 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:latest
+    command: [ "redis-server", "--requirepass", "myredispassword" ]
+    ports:
+      - "6379:6379"
+
   nebu:
     build:
       context: .
@@ -13,6 +19,7 @@ services:
     container_name: nebu
     environment:
       DATABASE_URL: postgres://postgres@postgres:5432/postgres
+      REDIS_URL: redis://:myredispassword@redis:6379
       RUST_LOG: debug
       NEBU_BUCKET_NAME: nebulous
       NEBU_BUCKET_REGION: us-east-1
