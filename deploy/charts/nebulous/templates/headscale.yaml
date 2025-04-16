@@ -38,7 +38,7 @@ data:
         - /mnt/derp/{{ .Values.headscale.derp.configMap.key }}
     {{- end }}
     dns:
-      base_domain: {{ .Values.headscale.dns.base_domain }}
+      base_domain: {{ .Values.headscale.dns.baseDomain }}
     log:
       format: {{ .Values.headscale.log.format }}
       level: {{ .Values.headscale.log.level }}

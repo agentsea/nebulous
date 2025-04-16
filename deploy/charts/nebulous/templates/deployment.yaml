@@ -48,7 +48,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgres.secret.name }}
-                  key: {{ .Values.postgres.secret.keys.connection_string }}
+                  key: {{ .Values.postgres.secret.keys.connectionString }}
             - name: MESSAGE_QUEUE_TYPE
               value: {{ .Values.messageQueue.type }}
             {{- if eq .Values.messageQueue.type "redis" }}
@@ -56,7 +56,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.redis.secret.name }}
-                  key: {{ .Values.redis.secret.keys.connection_string }}
+                  key: {{ .Values.redis.secret.keys.connectionString }}
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
