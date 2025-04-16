@@ -39,7 +39,7 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | headscale.derp.configMap.key | string | `"servers.yaml"` | The key in the ConfigMap containing the DERP server configuration YAML file. |
 | headscale.derp.configMap.name | string | `""` | The name of the ConfigMap containing the DERP server configuration. |
 | headscale.derp.externalMaps | list | `[]` | URLs of externally available DERP maps encoded in JSON. |
-| headscale.dns.base_domain | string | `""` | The base domain for MagicDNS hostnames. Cannot be the same as the Headscale server's domain. Refer to https://github.com/juanfont/headscale/blob/main/config-example.yaml for details. |
+| headscale.dns.baseDomain | string | `""` | The base domain for MagicDNS hostnames. Cannot be the same as the Headscale server's domain. Refer to https://github.com/juanfont/headscale/blob/main/config-example.yaml for details. |
 | headscale.domain | string | `""` | The domain under which the Headscale server is exposed. Required if create is true. The headscale server must be reachable at https://${domain}:443. |
 | headscale.imageTag | string | `"latest"` | The Headscale image tag. |
 | headscale.ingress.annotations | object | `{}` | Annotations to add to the Ingress resource. |
@@ -86,7 +86,7 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | postgres.persistence.enabled | bool | `false` | If enabled, use a PersistentVolumeClaim for the Postgres data. Ignored unless 'create' is true. |
 | postgres.persistence.size | string | `"100Gi"` | The size of the PersistentVolumeClaim for the Postgres data. |
 | postgres.persistence.storageClassName | string | `""` | The storage class of the PersistentVolumeClaim for the Postgres data. |
-| postgres.secret.keys.connection_string | string | `"CONNECTION_STRING"` | The key in the secret containing the Postgres connection string. |
+| postgres.secret.keys.connectionString | string | `"CONNECTION_STRING"` | The key in the secret containing the Postgres connection string. |
 | postgres.secret.name | string | `"postgres-secret"` | Name of the secret with the Postgres connection string. |
 | providers.aws.auth | object | `{"accessKeyId":"","secretAccessKey":""}` | Manual configuration of the AWS credentials. Not recommended for production. |
 | providers.aws.enabled | bool | `false` | Enable access to AWS. |
@@ -100,7 +100,7 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | redis.auth | object | `{"database":0,"host":"","password":"nebulous","port":6379}` | Manual configuration of the Redis connection. Except for 'host', this information is also used if 'create' is true. |
 | redis.create | bool | `false` | If enabled, create a Redis deployment and service. Not recommended for production. |
 | redis.imageTag | string | `"latest"` | The redis image tag. Ignored unless 'create' is true. |
-| redis.secret.keys.connection_string | string | `"CONNECTION_STRING"` | The key in the secret containing the Redis connection string. |
+| redis.secret.keys.connectionString | string | `"CONNECTION_STRING"` | The key in the secret containing the Redis connection string. |
 | redis.secret.keys.password | string | `"PASSWORD"` | The key in the secret containing the Redis password. |
 | redis.secret.name | string | `"redis-secret"` | Name of the secret with the Redis connection string and password. |
 | redis.service.annotations | object | `{}` | The annotations to add to the Kubernetes service. |

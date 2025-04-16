@@ -8,7 +8,7 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 type: Opaque
 data:
-  {{ .Values.postgres.secret.keys.connection_string }}: {{ printf "postgresql://%s:%s@%s:%d/%s" .Values.postgres.auth.user .Values.postgres.auth.password (include "postgres.host") (int .Values.postgres.auth.port) .Values.postgres.auth.database | b64enc }}
+  {{ .Values.postgres.secret.keys.connectionString }}: {{ printf "postgresql://%s:%s@%s:%d/%s" .Values.postgres.auth.user .Values.postgres.auth.password (include "postgres.host") (int .Values.postgres.auth.port) .Values.postgres.auth.database | b64enc }}
 ---
 {{- end }}
 {{- if .Values.postgres.create }}

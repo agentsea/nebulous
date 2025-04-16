@@ -109,7 +109,7 @@ postgres:
     name: "postgres-secret"
     keys:
       # -- The key in the secret containing the Postgres connection string.
-      connection_string: "CONNECTION_STRING"
+      connectionString: "CONNECTION_STRING"
 
   # -- Manual configuration of the Postgres connection. Except for 'host', this information is also used if 'create' is true.
   auth:
@@ -143,7 +143,7 @@ redis:
     name: "redis-secret"
     keys:
       # -- The key in the secret containing the Redis connection string.
-      connection_string: "CONNECTION_STRING"
+      connectionString: "CONNECTION_STRING"
       # -- The key in the secret containing the Redis password.
       password: "PASSWORD"
 
@@ -186,7 +186,7 @@ headscale:
   dns:
     # -- The base domain for MagicDNS hostnames. Cannot be the same as the Headscale server's domain.
     # Refer to https://github.com/juanfont/headscale/blob/main/config-example.yaml for details.
-    base_domain: ""
+    baseDomain: ""
 
   log:
     # -- The log level of the Headscale server. Options are "off", "trace", "debug", "info", "warn", "error".
