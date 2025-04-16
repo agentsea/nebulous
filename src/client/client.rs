@@ -47,7 +47,7 @@ impl NebulousClient {
     pub fn new_from_config() -> Result<Self, Box<dyn Error>> {
         let config = ClientConfig::read()?;
         let current_server = config
-            .get_current_server_config()
+            .get_current_server()
             .ok_or("No current server config found")?;
         let server_url = current_server
             .server

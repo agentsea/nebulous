@@ -16,7 +16,7 @@ pub async fn show_config() -> Result<(), Box<dyn Error>> {
 pub async fn show_current() -> Result<(), Box<dyn Error>> {
     match nebulous::config::ClientConfig::read() {
         Ok(config) => {
-            if let Some(current_server) = config.get_current_server_config() {
+            if let Some(current_server) = config.get_current_server() {
                 let mut current_server = current_server.clone();
                 current_server.api_key = Some("<redacted>".to_string());
                 match serde_yaml::to_string(&current_server) {

@@ -13,7 +13,7 @@ pub async fn fetch_container_logs(
 
     // Load config the same way as in get_cmd.rs
     let config = ClientConfig::read()?;
-    let current_server = config.get_current_server_config().unwrap();
+    let current_server = config.get_current_server().unwrap();
     let _server = current_server.server.as_ref().unwrap();
     let api_key = current_server.api_key.as_ref().unwrap();
 
@@ -44,7 +44,7 @@ async fn fetch_container_id_from_api(
     name: &str,
 ) -> Result<String, Box<dyn StdError>> {
     let config = nebulous::config::ClientConfig::read()?;
-    let current_server = config.get_current_server_config().unwrap();
+    let current_server = config.get_current_server().unwrap();
     let server = current_server.server.as_ref().unwrap();
     let api_key = current_server.api_key.as_ref().unwrap();
     // Adjust base URL/host as needed:

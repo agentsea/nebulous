@@ -6,7 +6,7 @@ fn prepare_request(
 ) -> Result<reqwest::RequestBuilder, Box<dyn std::error::Error>> {
     let config = nebulous::config::ClientConfig::read()?;
     let current_server = config
-        .get_current_server_config()
+        .get_current_server()
         .ok_or("Failed to get current server configuration")?;
     let server = current_server
         .server

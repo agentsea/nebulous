@@ -1,6 +1,6 @@
 use crate::accelerator::base::AcceleratorProvider;
 use crate::accelerator::runpod::RunPodProvider;
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::entities::containers;
 use crate::models::{V1Meter, V1UserProfile};
 use crate::mutation::{self, Mutation};

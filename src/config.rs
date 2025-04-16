@@ -20,10 +20,11 @@ pub struct ClientServerConfig {
     pub auth_server: Option<String>,
 }
 
+/// Configuration for a Nebulous client.
 impl ClientConfig {
-    /// Read the config from disk, or create a default one.
-    /// Then ensure that we either find or create a matching server in `self.servers`
-    /// based on environment variables, and set that as the `default_server`.
+    /// Read client configuration from disk, or create a default one.
+    /// If a server is configured through environment variables,
+    /// it will be added temporarily and marked as the current server.
     pub fn read() -> Result<Self, Box<dyn std::error::Error>> {
         let config_path = get_config_file_path()?;
         let path_exists = config_path.exists();
@@ -82,7 +83,7 @@ impl ClientConfig {
         }
     }
 
-    /// Write the current GlobalConfig to disk (YAML).
+    /// Write the current ClientConfig to disk (YAML).
     pub fn write(&self) -> Result<(), Box<dyn std::error::Error>> {
         let config_path = get_config_file_path()?;
 
@@ -97,19 +98,19 @@ impl ClientConfig {
         Ok(())
     }
 
-    /// Get the server config for the current server.
-    pub fn get_current_server_config(&self) -> Option<&ClientServerConfig> {
+    /// Get the current server.
+    pub fn get_current_server(&self) -> Option<&ClientServerConfig> {
         self.current_server
             .as_deref()
             .and_then(|name| self.servers.iter().find(|srv| srv.name == name))
     }
 
-    /// Get the server config for a specific server.
+    /// Get a server by name.
     pub fn get_server(&self, name: &str) -> Option<&ClientServerConfig> {
         self.servers.iter().find(|srv| srv.name == name)
     }
 
-    /// Remove a server from the config.
+    /// Remove a server.
     pub fn drop_server(&mut self, name: &str) {
         if let Some(pos) = self.servers.iter().position(|srv| srv.name == name) {
             self.servers.remove(pos);
@@ -121,7 +122,7 @@ impl ClientConfig {
         }
     }
 
-    /// Update or add a server config.
+    /// Update or add a server.
     pub fn update_server(&mut self, new_config: ClientServerConfig, make_current: bool) {
         if let Some(pos) = self
             .servers
@@ -257,6 +258,8 @@ impl ServerAuthConfig {
     }
 }
 
+
+/// Configuration for a Nebulous server.
 impl ServerConfig {
     pub fn new() -> Self {
         dotenv().ok();
@@ -337,4 +340,4 @@ impl ServerConfig {
     }
 }
 // Global static CONFIG instance
-pub static CONFIG: Lazy<ServerConfig> = Lazy::new(ServerConfig::new);
+pub static SERVER_CONFIG: Lazy<ServerConfig> = Lazy::new(ServerConfig::new);

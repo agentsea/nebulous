@@ -28,7 +28,7 @@ pub mod streams;
 pub mod validate;
 pub mod volumes;
 
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::handlers::v1::namespaces::ensure_namespace;
 use crate::handlers::v1::volumes::ensure_volume;
 use axum::Router;
@@ -53,9 +53,9 @@ pub async fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> 
     println!("Database pool created");
 
     // Initialize the appropriate message queue based on configuration
-    let message_queue = match CONFIG.message_queue_type.to_lowercase().as_str() {
+    let message_queue = match SERVER_CONFIG.message_queue_type.to_lowercase().as_str() {
         "redis" => {
-            let redis_url = &CONFIG.redis_url;
+            let redis_url = &SERVER_CONFIG.redis_url;
 
             // Create the Redis client using the constructed URL
             let redis_client = Arc::new(redis::Client::open(redis_url.as_str())?);
@@ -103,8 +103,8 @@ pub async fn ensure_base_resources(
     match ensure_namespace(
         db_pool,
         "root",
-        &CONFIG.root_owner,
-        &CONFIG.root_owner,
+        &SERVER_CONFIG.root_owner,
+        &SERVER_CONFIG.root_owner,
         None,
     )
     .await
@@ -117,8 +117,8 @@ pub async fn ensure_base_resources(
         db_pool,
         "root",
         "root",
-        &CONFIG.root_owner,
-        format!("s3://{}", &CONFIG.bucket_name).as_str(),
+        &SERVER_CONFIG.root_owner,
+        format!("s3://{}", &SERVER_CONFIG.bucket_name).as_str(),
         "root",
         None,
     )

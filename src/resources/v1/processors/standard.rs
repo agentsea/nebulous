@@ -1,5 +1,5 @@
 use crate::agent::agent::create_agent_key;
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::entities::containers;
 use crate::entities::processors;
 use crate::models::V1CreateAgentKeyRequest;
@@ -135,7 +135,7 @@ impl StandardProcessor {
         });
 
         // Redis URL with credentials - prioritize REDIS_URL if set
-        let redis_url = CONFIG.get_redis_url(username, password);
+        let redis_url = SERVER_CONFIG.get_redis_url(username, password);
 
         // Add all Redis env vars
         env.push(V1EnvVar {
@@ -819,7 +819,7 @@ impl ProcessorPlatform for StandardProcessor {
         let config = crate::config::ClientConfig::read()
             .map_err(|e| format!("Failed to read global config: {}", e))?;
         let auth_server = config
-            .get_current_server_config()
+            .get_current_server()
             .and_then(|cfg| cfg.auth_server.clone())
             .ok_or_else(|| "Auth server URL not configured".to_string())?;
         let user_token = user_profile
@@ -973,7 +973,7 @@ impl ProcessorPlatform for StandardProcessor {
         let config = crate::config::ClientConfig::read()
             .map_err(|e| format!("Failed to read global config: {}", e))?;
         let auth_server = config
-            .get_current_server_config()
+            .get_current_server()
             // Use .as_ref() to avoid moving out of shared reference
             .as_ref()
             .ok_or_else(|| "Current server config not found".to_string())?

@@ -1,7 +1,7 @@
 use crate::agent::agent::create_agent_key;
 use crate::agent::aws::create_s3_scoped_user;
 use crate::config::ClientConfig;
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::entities::containers;
 use crate::handlers::v1::volumes::ensure_volume;
 use crate::models::{V1CreateAgentKeyRequest, V1UserProfile};
@@ -196,7 +196,7 @@ pub trait ContainerPlatform {
             }
         };
 
-        let source = format!("s3://{}/data/{}", CONFIG.bucket_name, model.namespace);
+        let source = format!("s3://{}/data/{}", SERVER_CONFIG.bucket_name, model.namespace);
 
         debug!("Ensuring volume: {:?}", source);
         let _ = match ensure_volume(
@@ -219,7 +219,7 @@ pub trait ContainerPlatform {
 
         debug!("Creating s3 token");
         let s3_token =
-            match create_s3_scoped_user(&CONFIG.bucket_name, &model.namespace, &model.id).await {
+            match create_s3_scoped_user(&SERVER_CONFIG.bucket_name, &model.namespace, &model.id).await {
                 Ok(token) => token,
                 Err(e) => {
                     error!("Error creating s3 token: {:?}", e);
@@ -248,14 +248,14 @@ pub trait ContainerPlatform {
         );
         env.insert(
             "RCLONE_CONFIG_S3REMOTE_REGION".to_string(),
-            CONFIG.bucket_region.clone(),
+            SERVER_CONFIG.bucket_region.clone(),
         );
         env.insert("RCLONE_S3_NO_CHECK_BUCKET".to_string(), "true".to_string());
         env.insert("NEBU_API_KEY".to_string(), agent_key.unwrap());
         env.insert(
             "NEBU_SERVER".to_string(),
             config
-                .get_current_server_config()
+                .get_current_server()
                 .unwrap()
                 .server
                 .as_ref()
@@ -314,7 +314,7 @@ pub trait ContainerPlatform {
     }
 
     async fn get_tailscale_client(&self) -> TailscaleClient {
-        let tailscale_api_key = CONFIG
+        let tailscale_api_key = SERVER_CONFIG
             .tailscale
             .clone()
             .expect("No Tailscale configuration")
@@ -324,7 +324,7 @@ pub trait ContainerPlatform {
     }
 
     async fn get_tailscale_device_key(&self, model: &containers::Model) -> String {
-        let tailnet = CONFIG
+        let tailnet = SERVER_CONFIG
             .tailscale
             .clone()
             .expect("No Tailscale configuration")
@@ -407,7 +407,7 @@ pub trait ContainerPlatform {
         };
 
         debug!("[DEBUG] get_agent_key: Getting server config");
-        let server_config = match config.get_current_server_config() {
+        let server_config = match config.get_current_server() {
             Some(cfg) => cfg,
             None => {
                 error!("[ERROR] get_agent_key: No current server config found");

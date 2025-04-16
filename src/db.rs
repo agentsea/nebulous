@@ -1,11 +1,11 @@
 // src/db.rs
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbErr, Schema};
 
 pub type DbPool = DatabaseConnection;
 
 pub async fn init_db() -> Result<DbPool, DbErr> {
-    let database_url = &CONFIG.database_url;
+    let database_url = &SERVER_CONFIG.database_url;
     println!("Connecting to database at: {}", database_url);
 
     // Create the data directory if it doesn't exist

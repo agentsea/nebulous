@@ -1,5 +1,5 @@
 use crate::auth;
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::models::V1UserProfile;
 use crate::AppState;
 use axum::{
@@ -87,7 +87,7 @@ async fn internal_auth(
 }
 
 async fn external_auth(auth_header: &String, mut request: Request, next: Next) -> Response {
-    let auth_url = CONFIG
+    let auth_url = SERVER_CONFIG
         .auth
         .url
         .clone()
