@@ -162,14 +162,6 @@ spec:
             name: {{ .Values.headscale.derp.configMap.name }}
         {{- end }}
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: headscale-api-key-generator
-  namespace: {{ include "nebulous.namespace" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -191,7 +183,7 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: headscale-api-key-generator
+    name: {{ include "nebulous.serviceAccountName" . }}
     namespace: {{ include "nebulous.namespace" . }}
 roleRef:
   kind: Role
@@ -201,86 +193,30 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: secret-writer
+  name: secret-management
   namespace: {{ include "nebulous.namespace" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
 rules:
   - apiGroups: [ "" ]
     resources: [ "secrets" ]
-    verbs: [ "create", "delete", "get", "list" ]
+    verbs: [ "create", "delete", "get", "list", "patch", "update" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: allow-secret-creation
+  name: secret-management
   namespace: {{ include "nebulous.namespace" . }}
   labels:
       {{- include "common.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: headscale-api-key-generator
+    name: {{ include "nebulous.serviceAccountName" . }}
     namespace: {{ include "nebulous.namespace" . }}
 roleRef:
   kind: Role
-  name: secret-writer
+  name: secret-management
   apiGroup: rbac.authorization.k8s.io
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: delete-old-tailscale-secret
-  annotations:
-    "helm.sh/hook": pre-upgrade
-    "helm.sh/hook-weight": "-10"
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      serviceAccountName: headscale-api-key-generator
-      containers:
-        - name: delete-secret
-          image: bitnami/kubectl
-          command:
-            - "/bin/sh"
-            - "-c"
-            - "kubectl delete secret {{ .Values.tailscale.secret.name }} -n {{ include "nebulous.namespace" . }} --ignore-not-found"
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: generate-tailscale-secret-for-headscale
-  namespace: {{ include "nebulous.namespace" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-  annotations:
-    "helm.sh/hook": "post-install,post-upgrade"
-    "helm.sh/hook-weight": "5"
-spec:
-  template:
-    spec:
-      serviceAccountName: headscale-api-key-generator
-      restartPolicy: OnFailure
-      containers:
-        - name: api-key-generator
-          image: bitnami/kubectl
-          command: [ "/bin/sh", "-c", "
-          echo 'Waiting for Headscale Pod to be ready...';
-          until kubectl get pod -l app={{ include "headscale.name" . }} -n {{ include "headscale.namespace" . }} -o jsonpath='{.items[0].status.phase}' | grep -q Running; do
-            sleep 1;
-          done;
-          POD_NAME=$(kubectl get pod -l app={{ include "headscale.name" . }} -n {{ include "headscale.namespace" . }} -o jsonpath='{.items[0].metadata.name}')
-
-          kubectl exec $POD_NAME -n {{ include "headscale.namespace" . }} -- headscale users create nebu || echo 'User nebu already exists. That is OK.';
-
-          API_KEY=$(kubectl exec $POD_NAME -n {{ include "headscale.namespace" . }} -- headscale apikeys create --expiration 99y);
-          AUTH_KEY=$(kubectl exec $POD_NAME -n {{ include "headscale.namespace" . }} -- headscale preauthkeys create --user nebu --reusable);
-
-          kubectl create secret generic {{ .Values.tailscale.secret.name }} -n {{ include "nebulous.namespace" . }} \
-            --from-literal={{ .Values.tailscale.secret.keys.apiKey }}=$API_KEY \
-            --from-literal={{ .Values.tailscale.secret.keys.authKey }}=$AUTH_KEY \
-            --from-literal={{ .Values.tailscale.secret.keys.loginServer }}={{ include "headscale.host" . }};
-        " ]
 ---
 apiVersion: v1
 kind: Service
