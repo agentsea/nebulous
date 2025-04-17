@@ -6,10 +6,12 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct ClientConfig {
     pub servers: Vec<ClientServerConfig>,
     pub current_server: Option<String>,
+    pub internal_auth_port: Option<u16>,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
@@ -153,6 +155,11 @@ impl ClientConfig {
     /// Check if a server with the given name exists.
     pub fn contains_server(&self, name: &str) -> bool {
         self.servers.iter().any(|srv| srv.name == name)
+    }
+
+    /// Set the internal auth port
+    pub fn set_internal_auth_port(&mut self, port: u16) {
+        self.internal_auth_port = Some(port);
     }
 }
 

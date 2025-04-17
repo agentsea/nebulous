@@ -1,10 +1,8 @@
 use crate::commands::request::server_request;
 use nebulous::auth::models::SanitizedApiKey;
 use nebulous::auth::server::handlers::{ApiKeyListResponse, ApiKeyRequest, RawApiKeyResponse};
+use nebulous::config::ClientConfig;
 use std::error::Error;
-
-// TODO: Make the auth server's port configurable
-const SERVER: &str = "http://localhost:8080";
 
 fn pretty_print_api_key(api_key: SanitizedApiKey) {
     println!("ID: {}", api_key.id);
@@ -42,7 +40,9 @@ pub async fn get_api_key(id: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn generate_api_key() -> Result<(), Box<dyn Error>> {
-    let url = format!("{}/api-key/generate", SERVER);
+    let config = ClientConfig::read()?;
+    let internal_auth_url = format!("http://localhost:{}", config.internal_auth_port.expect("No internal auth port configured. Note that this command only works on localhost and when the internal auth server is active."));
+    let url = format!("{}/api-key/generate", internal_auth_url);
     match reqwest::Client::new().get(&url).send().await {
         Ok(response) => {
             let api_key = response.json::<RawApiKeyResponse>().await?;
@@ -61,7 +61,9 @@ pub async fn generate_api_key() -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn revoke_api_key(id: &str) -> Result<(), Box<dyn Error>> {
-    let url = format!("{}/api-key/revoke", SERVER);
+    let config = ClientConfig::read()?;
+    let internal_auth_url = format!("http://localhost:{}", config.internal_auth_port.expect("No internal auth port configured. Note that this command only works on localhost and when the internal auth server is active."));
+    let url = format!("{}/api-key/revoke", internal_auth_url);
     let payload = ApiKeyRequest { id: id.to_string() };
     match reqwest::Client::new()
         .post(&url)

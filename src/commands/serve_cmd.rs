@@ -8,6 +8,7 @@ use std::error::Error;
 use std::io::Write;
 use std::ops::Add;
 use std::process::{Command, Stdio};
+use nebulous::config::ClientConfig;
 
 pub async fn launch_server(
     host: String,
@@ -41,6 +42,10 @@ pub async fn launch_server(
 
     if !disable_internal_auth {
         println!("Starting auth server");
+        let mut config = ClientConfig::read()?;
+        config.set_internal_auth_port(auth_port);
+        config.write()?;
+
         tokio::spawn({
             let auth_state = app_state.clone();
             async move {
