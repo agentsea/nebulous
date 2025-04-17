@@ -8,7 +8,7 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 type: Opaque
 data:
-  {{ .Values.redis.secret.keys.connection_string }}: {{ printf "redis://%s:%d/%d" (include "redis.host" .) (int .Values.redis.auth.port) (int .Values.redis.auth.database) | b64enc }}
+  {{ .Values.redis.secret.keys.connectionString }}: {{ printf "redis://%s:%d/%d" (include "redis.host" .) (int .Values.redis.auth.port) (int .Values.redis.auth.database) | b64enc }}
   {{ .Values.redis.secret.keys.password}}: {{ .Values.redis.auth.password | b64enc }}
 ---
 {{- end }}
@@ -30,7 +30,31 @@ spec:
       labels:
         app: {{ include "redis.name" . }}
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          env:
+            - name: TS_STATE_DIR
+              value: /var/lib/tailscale
+            - name: TS_USERSPACE
+              value: "true"
+            - name: TS_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tailscale.secret.name }}
+                  key: {{ .Values.tailscale.secret.keys.authKey }}
+            - name: TS_EXTRA_ARGS
+              value: --login-server {{ include "tailscale.loginServer" . }}
+          volumeMounts:
+            - name: dev-net-tun
+              mountPath: /dev/net/tun
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
         - name: redis
           image: "redis:{{ .Values.redis.imageTag }}"
           command:
@@ -47,6 +71,11 @@ spec:
                   key: {{ .Values.redis.secret.keys.password }}
           ports:
             - containerPort: 6379
+      volumes:
+        - name: dev-net-tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
 ---
 apiVersion: v1
 kind: Service
@@ -67,35 +96,4 @@ spec:
       port: {{ .Values.redis.auth.port }}
       targetPort: 6379
   type: ClusterIP
----
-{{- if .Values.redis.ingress.enabled }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ include "redis.serviceName" . }}
-  namespace: {{ include "nebulous.namespace" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-  {{- with .Values.redis.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  {{- with .Values.redis.ingress.ingressClassName }}
-  ingressClassName: {{.}}
-  {{- end }}
-  rules:
-    - http:
-        paths:
-          - backend:
-              service:
-                name: {{ include "redis.name" . }}
-                port:
-                  number: {{ .Values.redis.auth.port }}
-            path: /
-            pathType: Prefix
-      {{- with .Values.redis.ingress.host }}
-      host: {{.}}
-      {{- end }}
-{{- end }}
 {{- end }}

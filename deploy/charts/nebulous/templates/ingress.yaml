@@ -11,20 +11,12 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- with .Values.ingress.className }}
+  {{- with .Values.ingress.ingressClassName }}
   ingressClassName: {{.}}
   {{- end }}
-  rules:
-    - http:
-        paths:
-          - backend:
-              service:
-                name: {{ include "nebulous.serviceName" . }}
-                port:
-                  number: {{ .Values.service.port }}
-            path: /
-            pathType: Prefix
-      {{- with .Values.ingress.host }}
-      host: {{.}}
-      {{- end }}
+  defaultBackend:
+    service:
+      name: {{ include "nebulous.serviceName" . }}
+      port:
+        number: {{ .Values.service.port }}
 {{- end }}

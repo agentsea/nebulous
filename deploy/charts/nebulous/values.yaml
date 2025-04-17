@@ -56,8 +56,6 @@ tailscale:
     # -- Name of the secret with the Redis connection string and password.
     name: "tailscale-secret"
     keys:
-      # -- The key in the secret containing the Tailscale host.
-      loginServer: "LOGIN_SERVER"
       # -- The key in the secret containing the Tailscale API key
       apiKey: "API_KEY"
       # -- The key in the secret containing the Tailscale auth key
@@ -111,7 +109,7 @@ postgres:
     name: "postgres-secret"
     keys:
       # -- The key in the secret containing the Postgres connection string.
-      connection_string: "CONNECTION_STRING"
+      connectionString: "CONNECTION_STRING"
 
   # -- Manual configuration of the Postgres connection. Except for 'host', this information is also used if 'create' is true.
   auth:
@@ -145,7 +143,7 @@ redis:
     name: "redis-secret"
     keys:
       # -- The key in the secret containing the Redis connection string.
-      connection_string: "CONNECTION_STRING"
+      connectionString: "CONNECTION_STRING"
       # -- The key in the secret containing the Redis password.
       password: "PASSWORD"
 
@@ -167,17 +165,6 @@ redis:
     # -- Override the name of the Kubernetes service.
     nameOverride: ""
 
-  ingress:
-    # -- If enabled, create an Ingress resource. Ignored unless 'create' is true.
-    enabled: false
-
-    # -- Annotations to add to the Ingress resource.
-    annotations: { }
-    # -- The ingress class.
-    ingressClassName: ""
-    # -- The host field of the Ingress rule.
-    host: ""
-
 ## Headscale configuration
 headscale:
   # -- If true, create a Headscale deployment and service. Overrides tailscale configuration. Not recommended for production.
@@ -186,7 +173,8 @@ headscale:
   namespaceOverride: ""
   # -- The Headscale image tag.
   imageTag: "latest"
-  # -- The domain under which the Headscale server is exposed.
+  # -- The domain under which the Headscale server is exposed. Required if create is true.
+  # The headscale server must be reachable at https://${domain}:443.
   domain: ""
 
   # -- Prefixes to allocate tailaddresses from. Must be within the IP ranges supported by the Tailscale client.
@@ -198,7 +186,13 @@ headscale:
   dns:
     # -- The base domain for MagicDNS hostnames. Cannot be the same as the Headscale server's domain.
     # Refer to https://github.com/juanfont/headscale/blob/main/config-example.yaml for details.
-    base_domain: ""
+    baseDomain: ""
+
+  log:
+    # -- The log level of the Headscale server. Options are "off", "trace", "debug", "info", "warn", "error".
+    level: "info"
+    # -- The log format of the Headscale server. Options are "text" or "json".
+    format: "text"
 
   # -- The Headscale DERP configuration. Either 'externalMapUrls' or 'configMap' must be set.
   derp:
@@ -232,9 +226,28 @@ headscale:
     # -- The storage class of the PersistentVolumeClaim created for the Headscale private keys.
     storageClassName: ""
 
+  tls:
+    letsencrypt:
+      # -- The hostname for the Let's Encrypt certificate. Has to match the domain of the Headscale server.
+      hostname: ""
+      # -- The email address for the Let's Encrypt certificate.
+      email: ""
+
+      # -- The name of the PersistentVolumeClaim for the Headscale Let's Encrypt cache.
+      claimName: "headscale-tls-pvc"
+
+      # -- If true, create a PersistentVolumeClaim for the Headscale Let's Encrypt cache.
+      createPersistentVolumeClaim: true
+      # -- The size of the PersistentVolumeClaim created for the Headscale Let's Encrypt cache.
+      size: "16Mi"
+      # -- The storage class of the PersistentVolumeClaim created for the Headscale Let's Encrypt cache.
+      storageClassName: ""
+
   service:
     # -- The port of the Kubernetes service.
     port: 80
+    # -- The type of the Kubernetes service. Options are "ClusterIP", "NodePort", and "LoadBalancer".
+    type: "ClusterIP"
     # -- The annotations to add to the Kubernetes service.
     annotations: { }
     # -- Override the name of the Kubernetes service.

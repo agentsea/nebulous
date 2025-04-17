@@ -11,15 +11,20 @@ data:
     server_url: {{ printf "https://%s:443" .Values.headscale.domain }}
     listen_addr: 0.0.0.0:8080
     metrics_listen_addr: 0.0.0.0:9090
-    # TLS termination happens at the Ingress level
-    # (see https://headscale.net/stable/ref/integration/reverse-proxy/#tls)
-    tls_cert_path: ""
-    tls_key_path: ""
     noise:
       private_key_path: /mnt/keys/noise_private.key
     prefixes:
       v4: 100.64.0.0/10
       v6: fd7a:115c:a1e0::/48
+    {{- if .Values.headscale.tls.letsencrypt.hostname }}
+    tls_letsencrypt_hostname: {{ .Values.headscale.tls.letsencrypt.hostname }}
+    acme_email: {{ .Values.headscale.tls.letsencrypt.email }}
+    tls_letsencrypt_listen: ":http"
+    tls_letsencrypt_cache_dir: /mnt/letsencrypt
+    tls_letsencrypt_challenge_type: HTTP-01
+    {{- end }}
+    tls_cert_path: ""
+    tls_key_path: ""
     database:
       type: sqlite
     derp:
@@ -33,7 +38,10 @@ data:
         - /mnt/derp/{{ .Values.headscale.derp.configMap.key }}
     {{- end }}
     dns:
-      base_domain: {{ .Values.headscale.dns.base_domain }}
+      base_domain: {{ .Values.headscale.dns.baseDomain }}
+    log:
+      format: {{ .Values.headscale.log.format }}
+      level: {{ .Values.headscale.log.level }}
 ---
 {{- if .Values.headscale.sqlite.createPersistentVolumeClaim }}
 apiVersion: v1
@@ -73,6 +81,25 @@ spec:
       storage: {{ .Values.headscale.privateKeys.size }}
 ---
 {{- end }}
+{{- if and .Values.headscale.tls.letsencrypt.hostname .Values.headscale.tls.letsencrypt.createPersistentVolumeClaim }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.headscale.tls.letsencrypt.claimName }}
+  namespace: {{ include "headscale.namespace" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.headscale.tls.letsencrypt.storageClassName }}
+  storageClassName: {{.}}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.headscale.tls.letsencrypt.size }}
+---
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -106,6 +133,10 @@ spec:
               name: sqlite
             - mountPath: /mnt/keys
               name: private-keys
+            {{- if .Values.headscale.tls.letsencrypt.hostname }}
+            - mountPath: /mnt/letsencrypt
+              name: tls-letsencrypt
+            {{- end }}
             {{- if .Values.headscale.derp.configMap.name }}
             - mountPath: /mnt/derp
               name: derp-config
@@ -120,19 +151,16 @@ spec:
         - name: private-keys
           persistentVolumeClaim:
             claimName: {{ .Values.headscale.privateKeys.claimName }}
+        {{- if .Values.headscale.tls.letsencrypt.hostname }}
+        - name: tls-letsencrypt
+          persistentVolumeClaim:
+            claimName: {{ .Values.headscale.tls.letsencrypt.claimName }}
+        {{- end }}
         {{- if .Values.headscale.derp.configMap.name }}
         - name: derp-config
           configMap:
             name: {{ .Values.headscale.derp.configMap.name }}
         {{- end }}
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: headscale-api-key-generator
-  namespace: {{ include "nebulous.namespace" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -155,7 +183,7 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: headscale-api-key-generator
+    name: {{ include "nebulous.serviceAccountName" . }}
     namespace: {{ include "nebulous.namespace" . }}
 roleRef:
   kind: Role
@@ -165,86 +193,30 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: secret-writer
+  name: secret-management
   namespace: {{ include "nebulous.namespace" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
 rules:
   - apiGroups: [ "" ]
     resources: [ "secrets" ]
-    verbs: [ "create", "delete", "get", "list" ]
+    verbs: [ "create", "delete", "get", "list", "patch", "update" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: allow-secret-creation
+  name: secret-management
   namespace: {{ include "nebulous.namespace" . }}
   labels:
       {{- include "common.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: headscale-api-key-generator
+    name: {{ include "nebulous.serviceAccountName" . }}
     namespace: {{ include "nebulous.namespace" . }}
 roleRef:
   kind: Role
-  name: secret-writer
+  name: secret-management
   apiGroup: rbac.authorization.k8s.io
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: delete-old-tailscale-secret
-  annotations:
-    "helm.sh/hook": pre-upgrade
-    "helm.sh/hook-weight": "-10"
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      serviceAccountName: headscale-api-key-generator
-      containers:
-        - name: delete-secret
-          image: bitnami/kubectl
-          command:
-            - "/bin/sh"
-            - "-c"
-            - "kubectl delete secret {{ .Values.tailscale.secret.name }} -n {{ include "nebulous.namespace" . }} --ignore-not-found"
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: generate-tailscale-secret-for-headscale
-  namespace: {{ include "nebulous.namespace" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-  annotations:
-    "helm.sh/hook": "post-install,post-upgrade"
-    "helm.sh/hook-weight": "5"
-spec:
-  template:
-    spec:
-      serviceAccountName: headscale-api-key-generator
-      restartPolicy: OnFailure
-      containers:
-        - name: api-key-generator
-          image: bitnami/kubectl
-          command: [ "/bin/sh", "-c", "
-          echo 'Waiting for Headscale Pod to be ready...';
-          until kubectl get pod -l app={{ include "headscale.name" . }} -n {{ include "headscale.namespace" . }} -o jsonpath='{.items[0].status.phase}' | grep -q Running; do
-            sleep 1;
-          done;
-          POD_NAME=$(kubectl get pod -l app={{ include "headscale.name" . }} -n {{ include "headscale.namespace" . }} -o jsonpath='{.items[0].metadata.name}')
-
-          kubectl exec $POD_NAME -- headscale users create nebu || echo 'User nebu already exists. That is OK.';
-
-          API_KEY=$(kubectl exec $POD_NAME -- headscale apikeys create --expiration 99y);
-          AUTH_KEY=$(kubectl exec $POD_NAME -- headscale preauthkeys create --user nebu --reusable);
-
-          kubectl create secret generic {{ .Values.tailscale.secret.name }} -n {{ include "nebulous.namespace" . }} \
-            --from-literal={{ .Values.tailscale.secret.keys.apiKey }}=$API_KEY \
-            --from-literal={{ .Values.tailscale.secret.keys.authKey }}=$AUTH_KEY \
-            --from-literal={{ .Values.tailscale.secret.keys.loginServer }}={{ include "headscale.host" . }};
-        " ]
 ---
 apiVersion: v1
 kind: Service
@@ -254,9 +226,9 @@ metadata:
   labels:
     {{- include "common.labels" . | nindent 4 }}
   {{- with .Values.headscale.service.annotations }}
-    annotations:
-        {{- toYaml . | nindent 4 }}
-    {{- end }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   selector:
     app: {{ include "headscale.name" . }}
@@ -264,7 +236,7 @@ spec:
     - protocol: TCP
       port: {{ .Values.headscale.service.port }}
       targetPort: 8080
-  type: ClusterIP
+  type: {{ .Values.headscale.service.type }}
 ---
 apiVersion: v1
 kind: Service
@@ -298,18 +270,10 @@ spec:
   {{- with .Values.headscale.ingress.ingressClassName }}
   ingressClassName: {{.}}
   {{- end }}
-  rules:
-    - http:
-        paths:
-          - backend:
-              service:
-                name: {{ include "headscale.name" . }}
-                port:
-                  number: {{ .Values.headscale.service.port }}
-            path: /
-            pathType: Prefix
-      {{- with .Values.headscale.domain }}
-      host: {{.}}
-      {{- end }}
+  defaultBackend:
+    service:
+      name: {{ include "headscale.serviceName" . }}
+      port:
+        number: {{ .Values.headscale.service.port }}
 {{- end }}
 {{- end }}
