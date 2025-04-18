@@ -129,9 +129,14 @@ pub enum Commands {
 
     /// Manage configuration
     Config {
-        /// The action to perform.
         #[command(subcommand)]
         command: ConfigCommands,
+    },
+
+    /// Manage a headscale server
+    Headscale {
+        #[command(subcommand)]
+        command: HeadscaleCommands,
     },
 }
 
@@ -498,5 +503,39 @@ pub enum CurrentConfigActions {
     Set {
         /// The name of the server to set as current
         server: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum HeadscaleCommands {
+    /// Manage API keys
+    Apikey {
+        /// The action to perform
+        #[command(subcommand)]
+        action: HeadscaleApiKeyActions,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum HeadscaleApiKeyActions {
+    /// Generate a new API key
+    Create {
+        /// The API key's validity period
+        #[arg(long)]
+        expiration: String,
+    },
+
+    /// Validate an API key
+    Validate {
+        /// The API key's prefix
+        #[arg(long)]
+        prefix: String,
+    },
+
+    /// Revoke an API key.
+    Revoke {
+        /// The API key's prefix
+        #[arg(long)]
+        prefix: String,
     },
 }

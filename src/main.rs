@@ -5,7 +5,8 @@ use std::path::Path;
 
 use crate::cli::{
     ApiKeyActions, AuthCommands, Cli, Commands, ConfigCommands, CreateCommands,
-    CurrentConfigActions, DeleteCommands, GetCommands, ProxyCommands, SelectCommands,
+    CurrentConfigActions, DeleteCommands, GetCommands, HeadscaleApiKeyActions, HeadscaleCommands,
+    ProxyCommands, SelectCommands,
 };
 use clap::Parser;
 use cli::SyncCommands;
@@ -169,6 +170,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
                 CurrentConfigActions::Set { server } => {
                     commands::config_cmd::set_current(&server).await?;
+                }
+            },
+        },
+        Commands::Headscale { command } => match command {
+            HeadscaleCommands::Apikey { action } => match action {
+                HeadscaleApiKeyActions::Create { expiration } => {
+                    commands::headscale_cmd::create_api_key(&expiration).await?;
+                }
+                HeadscaleApiKeyActions::Validate { prefix } => {
+                    commands::headscale_cmd::validate_api_key(&prefix).await?;
+                }
+                HeadscaleApiKeyActions::Revoke { prefix } => {
+                    commands::headscale_cmd::revoke_api_key(&prefix).await?;
                 }
             },
         },
