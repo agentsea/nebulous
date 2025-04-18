@@ -196,7 +196,10 @@ pub trait ContainerPlatform {
             }
         };
 
-        let source = format!("s3://{}/data/{}", SERVER_CONFIG.bucket_name, model.namespace);
+        let source = format!(
+            "s3://{}/data/{}",
+            SERVER_CONFIG.bucket_name, model.namespace
+        );
 
         debug!("Ensuring volume: {:?}", source);
         let _ = match ensure_volume(
@@ -219,7 +222,9 @@ pub trait ContainerPlatform {
 
         debug!("Creating s3 token");
         let s3_token =
-            match create_s3_scoped_user(&SERVER_CONFIG.bucket_name, &model.namespace, &model.id).await {
+            match create_s3_scoped_user(&SERVER_CONFIG.bucket_name, &model.namespace, &model.id)
+                .await
+            {
                 Ok(token) => token,
                 Err(e) => {
                     error!("Error creating s3 token: {:?}", e);

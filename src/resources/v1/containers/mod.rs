@@ -1,6 +1,11 @@
 pub mod base;
 pub mod controller;
+pub mod docker;
+pub mod ec2;
 pub mod factory;
+pub mod gce;
 pub mod kube;
 pub mod models;
+pub mod platform;
 pub mod runpod;
+pub mod ssh;
