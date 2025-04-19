@@ -1,4 +1,4 @@
-use crate::resources::v1::containers::platform::PlatformConnection;
+use crate::resources::v1::containers::platforms::platform::PlatformConnection;
 
 pub struct SSHConnection {
     pub host: String,

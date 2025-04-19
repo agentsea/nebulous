@@ -1,7 +1,7 @@
-use crate::resources::v1::containers::docker::DockerPlatform;
+use super::docker::DockerPlatform;
+use super::platform::{ContainerPlatform, ContainerPlatformStatus};
+use super::ssh::SSHConnection;
 use crate::resources::v1::containers::models::ContainerModelVersion;
-use crate::resources::v1::containers::platform::{ContainerPlatform, ContainerPlatformStatus};
-use crate::resources::v1::containers::ssh::SSHConnection;
 
 pub struct GCEPlatform<V: ContainerModelVersion> {
     inner: DockerPlatform<SSHConnection, V>,
@@ -44,7 +44,7 @@ impl<V: ContainerModelVersion> ContainerPlatform<V> for GCEPlatform<V> {
         todo!()
     }
 
-    async fn status(&self) -> anyhow::Result<ContainerPlatformStatus> {
+    async fn platform_status(&self) -> anyhow::Result<ContainerPlatformStatus> {
         todo!()
     }
 }

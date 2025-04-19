@@ -10,14 +10,15 @@ pub enum ContainerPlatformStatus {
 }
 
 #[async_trait]
-pub trait ContainerPlatform<T: ContainerModelVersion> {
-    async fn create(&self, container: T::Container) -> anyhow::Result<T::Container>;
-    async fn get(&self, id: &str) -> anyhow::Result<T::Container>;
+pub trait ContainerPlatform<V: ContainerModelVersion> {
+    fn from_spec(spec: V::ContainerPlatform) -> Self;
+    async fn create(&self, container: V::Container) -> anyhow::Result<V::Container>;
+    async fn get(&self, id: &str) -> anyhow::Result<V::Container>;
     async fn delete(&self, id: &str) -> anyhow::Result<()>;
-    async fn logs(&self, id: &str) -> anyhow::Result<()>;
+    async fn logs(&self, id: &str) -> anyhow::Result<String>;
 
     // TODO: Design API
-    async fn exec(&self, id: &str, command: &str) -> anyhow::Result<()>;
+    async fn exec(&self, id: &str, command: &str) -> anyhow::Result<String>;
 
     // TODO: Add platform-level monitoring, status, and properties
     async fn status(&self) -> anyhow::Result<ContainerPlatformStatus>;
