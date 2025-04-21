@@ -1,5 +1,7 @@
 use super::local::LocalShell;
-use super::platform::{ContainerPlatform, ContainerPlatformStatus, PlatformConnection};
+use super::platform::{
+    ContainerPlatform, ContainerPlatformStatus, PlatformConnection, ShellConnection,
+};
 use crate::resources::v1::containers::models::v1::V1Container;
 use crate::resources::v1::containers::models::ContainerModelVersion;
 use crate::resources::v1::containers::platforms::ssh::SSHConnection;
@@ -7,7 +9,7 @@ use serde::Deserialize;
 
 pub struct DockerPlatform<C, V>
 where
-    C: PlatformConnection,
+    C: PlatformConnection<V> + ShellConnection,
     V: ContainerModelVersion,
 {
     pub(crate) connection: C,
@@ -130,7 +132,7 @@ impl ToDockerContainer for DockerInspect {
 
 impl<C, V> ContainerPlatform<V> for DockerPlatform<C, V>
 where
-    C: PlatformConnection,
+    C: PlatformConnection<V> + ShellConnection,
     V: ContainerModelVersion,
     V::Container: FromDockerContainer + ToDockerContainer,
 {
@@ -157,7 +159,7 @@ where
         Ok(container)
     }
 
-    async fn delete(&self, id: &str) -> anyhow::Result<()> {
+    async fn delete(&self, id: &str) -> anyhow::Result<V::Container> {
         let command = format!("docker rm -f {}", id);
         let output = self.connection.run_command(&command).await?;
         if !output.is_empty() {
@@ -188,5 +190,5 @@ where
     }
 }
 
-pub(crate) type LocalDockerPlatform<V> = DockerPlatform<LocalShell, V>;
-pub(crate) type RemoteDockerPlatform<V> = DockerPlatform<SSHConnection, V>;
+pub(crate) type LocalDockerPlatform<V> = DockerPlatform<LocalShell<V>, V>;
+pub(crate) type RemoteDockerPlatform<V> = DockerPlatform<SSHConnection<V>, V>;
