@@ -88,10 +88,7 @@ spec:
                   name: {{ .Values.tailscale.secret.name }}
                   key: {{ .Values.tailscale.secret.keys.authKey }}
             - name: TS_LOGINSERVER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.tailscale.secret.name }}
-                  key: {{ .Values.tailscale.secret.keys.loginServer }}
+              value: {{ include "tailscale.loginServer" . }}
             - name: RUST_LOG
               value: {{ .Values.logLevel | lower }}
           envFrom:

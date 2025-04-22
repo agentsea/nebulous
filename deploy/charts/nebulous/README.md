@@ -105,6 +105,14 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | redis.secret.name | string | `"redis-secret"` | Name of the secret with the Redis connection string and password. |
 | redis.service.annotations | object | `{}` | The annotations to add to the Kubernetes service. |
 | redis.service.nameOverride | string | `""` | Override the name of the Kubernetes service. |
+| redis.tailscale.authKey | string | `""` | The Tailscale auth key for Redis. If headscale.enabled is true, this is ignored. |
+| redis.tailscale.persistence.claimName | string | `"redis-tailscale-pvc"` | The name of the PersistentVolumeClaim for the Tailscale state for Redis. |
+| redis.tailscale.persistence.createPersistentVolumeClaim | bool | `true` | If true, create a new PersistentVolumeClaim for the Tailscale state for Redis. |
+| redis.tailscale.persistence.enabled | bool | `true` | If enabled, use a PersistentVolumeClaim to store the Tailscale state for Redis. Ignored unless 'create' is true. |
+| redis.tailscale.persistence.size | string | `"16Mi"` | The size of the PersistentVolumeClaim for the Tailscale state for Redis. |
+| redis.tailscale.persistence.storageClassName | string | `""` | The storage class of the PersistentVolumeClaim for the Tailscale state for Redis. |
+| redis.tailscale.secret.keys.authKey | string | `"AUTH_KEY"` | The key in the secret containing the Tailscale auth key. |
+| redis.tailscale.secret.name | string | `"tailscale-redis-secret"` | Name of the secret with the Tailscale auth key for Redis. |
 | service.annotations | object | `{}` | Annotations to add to the Kubernetes service. |
 | service.nameOverride | string | `""` | Override the name of the Kubernetes service. |
 | service.port | int | `3000` | The port of the Kubernetes service. |
@@ -128,7 +136,7 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | tailscale.apiKey | string | `""` | The Tailscale API key. If headscale.enabled is true, this is ignored. |
 | tailscale.authKey | string | `""` | The Tailscale auth key. If headscale.enabled is true, this is ignored. |
 | tailscale.loginServer | string | `"https://login.tailscale.com"` | The Tailscale host to connect to. If headscale.enabled is true, this is ignored. |
-| tailscale.secret.keys.apiKey | string | `"API_KEY"` | The key in the secret containing the Tailscale API key |
-| tailscale.secret.keys.authKey | string | `"AUTH_KEY"` | The key in the secret containing the Tailscale auth key |
-| tailscale.secret.name | string | `"tailscale-secret"` | Name of the secret with the Redis connection string and password. |
+| tailscale.secret.keys.apiKey | string | `"API_KEY"` | The key in the secret containing the Tailscale API key. |
+| tailscale.secret.keys.authKey | string | `"AUTH_KEY"` | The key in the secret containing the Tailscale auth key. |
+| tailscale.secret.name | string | `"tailscale-secret"` | Name of the secret with the Tailscale auth key and API key. |
 

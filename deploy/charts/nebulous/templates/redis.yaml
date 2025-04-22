@@ -50,6 +50,8 @@ spec:
           volumeMounts:
             - name: dev-net-tun
               mountPath: /dev/net/tun
+            - name: tailscale-state
+              mountPath: /var/lib/tailscale
           securityContext:
             capabilities:
               add:
@@ -76,7 +78,33 @@ spec:
           hostPath:
             path: /dev/net/tun
             type: CharDevice
+        - name: tailscale-state
+          {{- if .Values.redis.tailscale.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.redis.tailscale.persistence.claimName }}
+          {{- else }}
+          emptyDir: { }
+          {{- end }}
 ---
+{{- if .Values.redis.tailscale.persistence.createPersistentVolumeClaim }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.redis.tailscale.persistence.claimName }}
+  namespace: {{ include "nebulous.namespace" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.redis.tailscale.persistence.storageClassName }}
+  storageClassName: {{.}}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.redis.tailscale.persistence.size }}
+---
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:

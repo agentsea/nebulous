@@ -16,15 +16,6 @@ WARNING: Using the integrated Postgres database. This is not recommended for pro
 {{- end }}
 {{ if .Values.redis.create }}
 Internal Redis endpoint: {{ printf "redis://%s:%d" (include "redis.host" . ) (int .Values.redis.auth.port) }}
-{{- if .Values.redis.ingress.enabled }}
-{{- if .Values.redis.ingress.host }}
-External Redis endpoint: {{ printf "redis://%s" .Values.redis.ingress.host }}
-{{- else }}
-External Redis endpoint: .Values.redis.ingress.host not specified, refer to Ingress configuration provided through values.yaml.
-{{- end }}
-{{- else }}
-External Redis endpoint: Set .Values.redis.ingress.enabled to true to expose Redis externally.
-{{- end }}
 {{- end }}
 {{ if .Values.encryptionKey.encodedValue }}
 WARNING: Encryption key is not provided through a user-managed secret. This is not recommended for production.
