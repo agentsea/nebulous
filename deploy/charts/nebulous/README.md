@@ -31,6 +31,8 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| bucket.name | string | `"nebulous"` | The name of the bucket to use for Nebulous. |
+| bucket.region | string | `"us-east-1"` | The region of the bucket to use for Nebulous. |
 | encryptionKey.encodedValue | string | `""` | The 32 byte encryption key encoded in base64. Not recommended for production. |
 | encryptionKey.secret.keys.encryptionKey | string | `"ENCRYPTION_KEY"` | The key in the secret containing the encryption key. |
 | encryptionKey.secret.name | string | `"nebulous-secret"` | The name of the secret containing the 32 byte encryption key. |
@@ -110,6 +112,7 @@ helm install nebulous nebulous/nebulous -f values.yaml \
 | redis.tailscale.secret.keys.authKey | string | `"AUTH_KEY"` | The key in the secret containing the Tailscale auth key. |
 | redis.tailscale.secret.name | string | `"tailscale-redis-secret"` | Name of the secret with the Tailscale auth key for Redis. |
 | redis.tailscale.stateSecret.name | string | `"tailscale-redis-state-secret"` | Name of the secret where Tailscale stores its state. |
+| rootOwner | string | `"me"` | The owner of the Nebulous root. |
 | service.annotations | object | `{}` | Annotations to add to the Kubernetes service. |
 | service.nameOverride | string | `""` | Override the name of the Kubernetes service. |
 | service.port | int | `3000` | The port of the Kubernetes service. |

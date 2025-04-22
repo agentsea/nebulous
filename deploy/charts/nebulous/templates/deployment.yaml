@@ -89,6 +89,12 @@ spec:
               value: {{ include "tailscale.loginServer" . }}
             - name: RUST_LOG
               value: {{ .Values.logLevel | lower }}
+            - name: NEBU_BUCKET_NAME
+              value: {{ .Values.bucket.name }}
+            - name: NEBU_BUCKET_REGION
+              value: {{ .Values.bucket.region }}
+            - name: NEBU_ROOT_OWNER
+              value: {{ .Values.rootOwner }}
           envFrom:
             - secretRef:
                 name: {{ .Values.tailscale.secret.name }}

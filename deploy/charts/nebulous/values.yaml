@@ -40,6 +40,15 @@ local:
   # -- If enabled, nebulous can run Pods in the local cluster.
   enabled: false
 
+bucket:
+  # -- The name of the bucket to use for Nebulous.
+  name: "nebulous"
+  # -- The region of the bucket to use for Nebulous.
+  region: "us-east-1"
+
+# -- The owner of the Nebulous root.
+rootOwner: "me"
+
 messageQueue:
   # -- The message queue type. The currently only supported value is "redis".
   type: "redis"
