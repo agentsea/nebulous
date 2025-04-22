@@ -43,8 +43,8 @@ spec:
             - name: TS_AUTH_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.tailscale.secret.name }}
-                  key: {{ .Values.tailscale.secret.keys.authKey }}
+                  name: {{ .Values.redis.tailscale.secret.name }}
+                  key: {{ .Values.redis.tailscale.secret.keys.authKey }}
             - name: TS_EXTRA_ARGS
               value: --login-server {{ include "tailscale.loginServer" . }}
           volumeMounts:
