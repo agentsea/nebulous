@@ -19,12 +19,69 @@ encryptionKey:
   encodedValue: "<base64 encoded key>"
 ```
 
+Add the Tailscale API key and auth key:
+```yaml
+tailscale:
+  apiKey: <Tailscale API key>
+  authKey: <Tailscale auth key for Nebulous>
+```
+
+The integrated Redis database requires an auth key for Tailscale as well:
+```yaml
+redis:
+  create: true
+  tailscale:
+    authKey: <Tailscale auth key for Redis>
+```
+
+Finally, enable the creation of the integrated Postgres database:
+```yaml
+postgres:
+  create: true
+```
+
 Add the nebulous chart repository and install the chart into a dedicated namespace:
 
 ```bash
 helm repo add nebulous https://agentsea.github.io/nebulous
 helm install nebulous nebulous/nebulous -f values.yaml \
   --namespace nebulous --create-namespace
+```
+
+## Credential secrets
+
+In production, the encryption key and Tailscale keys should be provided as Kubernetes secrets
+and not as Helm chart values.
+
+You can use the following template to create them.
+This template assumes installation in the `nebulous` namespace 
+and the secret names and keys as defined in the Helm chart's default [values.yaml](./values.yaml).
+
+```yaml
+api: v1
+kind: Secret
+metadata:
+  name: nebulous-secret
+  namespace: nebulous
+data:
+  ENCRYPTION_KEY: <base64 encoded key>
+---
+api: v1
+kind: Secret
+metadata:
+  name: tailscale-secret
+  namespace: nebulous
+data:
+  API_KEY: <Tailscale API key>
+  AUTH_KEY: <Tailscale auth key for Nebulous>
+---
+api: v1
+kind: Secret
+metadata:
+  name: tailscale-redis-secret
+  namespace: nebulous
+data:
+  AUTH_KEY: <Tailscale auth key for Redis>
 ```
 
 ## Values
