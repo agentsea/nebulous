@@ -26,6 +26,39 @@ data:
 ---
 {{- end }}
 {{- if .Values.redis.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.redis.serviceAccountName }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tailscale-redis
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resourceNames: ["{{ .Values.redis.tailscale.stateSecret.name }}"]
+    resources: ["secrets"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tailscale-redis
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.redis.serviceAccountName }}
+roleRef:
+  kind: Role
+  name: tailscale-redis
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -43,14 +76,15 @@ spec:
       labels:
         app: {{ include "redis.name" . }}
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: {{ .Values.redis.serviceAccountName }}
       containers:
         - name: tailscale
           image: tailscale/tailscale:latest
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
           env:
-            - name: TS_STATE_DIR
-              value: /var/lib/tailscale
             - name: TS_USERSPACE
               value: "true"
             - name: TS_AUTH_KEY
@@ -58,18 +92,20 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.redis.tailscale.secret.name }}
                   key: {{ .Values.redis.tailscale.secret.keys.authKey }}
+            - name: TS_HOSTNAME
+              value: "redis"
             - name: TS_EXTRA_ARGS
               value: --login-server {{ include "tailscale.loginServer" . }}
-          volumeMounts:
-            - name: dev-net-tun
-              mountPath: /dev/net/tun
-            - name: tailscale-state
-              mountPath: /var/lib/tailscale
-          securityContext:
-            capabilities:
-              add:
-                - NET_ADMIN
-                - NET_RAW
+            - name: TS_KUBE_SECRET
+              value: {{ .Values.redis.tailscale.stateSecret.name }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
         - name: redis
           image: "redis:{{ .Values.redis.imageTag }}"
           command:
@@ -86,38 +122,7 @@ spec:
                   key: {{ .Values.redis.secret.keys.password }}
           ports:
             - containerPort: 6379
-      volumes:
-        - name: dev-net-tun
-          hostPath:
-            path: /dev/net/tun
-            type: CharDevice
-        - name: tailscale-state
-          {{- if .Values.redis.tailscale.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.redis.tailscale.persistence.claimName }}
-          {{- else }}
-          emptyDir: { }
-          {{- end }}
 ---
-{{- if .Values.redis.tailscale.persistence.createPersistentVolumeClaim }}
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ .Values.redis.tailscale.persistence.claimName }}
-  namespace: {{ include "nebulous.namespace" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-spec:
-  {{- with .Values.redis.tailscale.persistence.storageClassName }}
-  storageClassName: {{.}}
-  {{- end }}
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: {{ .Values.redis.tailscale.persistence.size }}
----
-{{- end }}
 apiVersion: v1
 kind: Service
 metadata:

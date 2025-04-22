@@ -165,6 +165,9 @@ redis:
     # -- Override the name of the Kubernetes service.
     nameOverride: ""
 
+  # -- The name of the Kubernetes service account for the Redis Pod.
+  serviceAccountName: "redis"
+
   tailscale:
     # -- The Tailscale auth key for Redis. If headscale.enabled is true, this is ignored.
     authKey: ""
@@ -176,18 +179,9 @@ redis:
         # -- The key in the secret containing the Tailscale auth key.
         authKey: "AUTH_KEY"
 
-    persistence:
-      # -- If enabled, use a PersistentVolumeClaim to store the Tailscale state for Redis. Ignored unless 'create' is true.
-      enabled: true
-      # -- The name of the PersistentVolumeClaim for the Tailscale state for Redis.
-      claimName: "redis-tailscale-pvc"
-
-      # -- If true, create a new PersistentVolumeClaim for the Tailscale state for Redis.
-      createPersistentVolumeClaim: true
-      # -- The size of the PersistentVolumeClaim for the Tailscale state for Redis.
-      size: "16Mi"
-      # -- The storage class of the PersistentVolumeClaim for the Tailscale state for Redis.
-      storageClassName: ""
+    stateSecret:
+      # -- Name of the secret where Tailscale stores its state.
+      name: "tailscale-redis-state-secret"
 
 ## Headscale configuration
 headscale:

@@ -7,8 +7,6 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: {{ include "nebulous.appSelector" . }}

@@ -19,69 +19,12 @@ encryptionKey:
   encodedValue: "<base64 encoded key>"
 ```
 
-Add the Tailscale API key and auth key:
-```yaml
-tailscale:
-  apiKey: <Tailscale API key>
-  authKey: <Tailscale auth key for Nebulous>
-```
-
-The integrated Redis database requires an auth key for Tailscale as well:
-```yaml
-redis:
-  create: true
-  tailscale:
-    authKey: <Tailscale auth key for Redis>
-```
-
-Finally, enable the creation of the integrated Postgres database:
-```yaml
-postgres:
-  create: true
-```
-
 Add the nebulous chart repository and install the chart into a dedicated namespace:
 
 ```bash
 helm repo add nebulous https://agentsea.github.io/nebulous
 helm install nebulous nebulous/nebulous -f values.yaml \
   --namespace nebulous --create-namespace
-```
-
-## Credential secrets
-
-In production, the encryption key and Tailscale keys should be provided as Kubernetes secrets
-and not as Helm chart values.
-
-You can use the following template to create them.
-This template assumes installation in the `nebulous` namespace 
-and the secret names and keys as defined in the Helm chart's default [values.yaml](./values.yaml).
-
-```yaml
-api: v1
-kind: Secret
-metadata:
-  name: nebulous-secret
-  namespace: nebulous
-data:
-  ENCRYPTION_KEY: <base64 encoded key>
----
-api: v1
-kind: Secret
-metadata:
-  name: tailscale-secret
-  namespace: nebulous
-data:
-  API_KEY: <Tailscale API key>
-  AUTH_KEY: <Tailscale auth key for Nebulous>
----
-api: v1
-kind: Secret
-metadata:
-  name: tailscale-redis-secret
-  namespace: nebulous
-data:
-  AUTH_KEY: <Tailscale auth key for Redis>
 ```
 
 ## Values
@@ -162,14 +105,11 @@ data:
 | redis.secret.name | string | `"redis-secret"` | Name of the secret with the Redis connection string and password. |
 | redis.service.annotations | object | `{}` | The annotations to add to the Kubernetes service. |
 | redis.service.nameOverride | string | `""` | Override the name of the Kubernetes service. |
+| redis.serviceAccountName | string | `"redis"` | The name of the Kubernetes service account for the Redis Pod. |
 | redis.tailscale.authKey | string | `""` | The Tailscale auth key for Redis. If headscale.enabled is true, this is ignored. |
-| redis.tailscale.persistence.claimName | string | `"redis-tailscale-pvc"` | The name of the PersistentVolumeClaim for the Tailscale state for Redis. |
-| redis.tailscale.persistence.createPersistentVolumeClaim | bool | `true` | If true, create a new PersistentVolumeClaim for the Tailscale state for Redis. |
-| redis.tailscale.persistence.enabled | bool | `true` | If enabled, use a PersistentVolumeClaim to store the Tailscale state for Redis. Ignored unless 'create' is true. |
-| redis.tailscale.persistence.size | string | `"16Mi"` | The size of the PersistentVolumeClaim for the Tailscale state for Redis. |
-| redis.tailscale.persistence.storageClassName | string | `""` | The storage class of the PersistentVolumeClaim for the Tailscale state for Redis. |
 | redis.tailscale.secret.keys.authKey | string | `"AUTH_KEY"` | The key in the secret containing the Tailscale auth key. |
 | redis.tailscale.secret.name | string | `"tailscale-redis-secret"` | Name of the secret with the Tailscale auth key for Redis. |
+| redis.tailscale.stateSecret.name | string | `"tailscale-redis-state-secret"` | Name of the secret where Tailscale stores its state. |
 | service.annotations | object | `{}` | Annotations to add to the Kubernetes service. |
 | service.nameOverride | string | `""` | Override the name of the Kubernetes service. |
 | service.port | int | `3000` | The port of the Kubernetes service. |
