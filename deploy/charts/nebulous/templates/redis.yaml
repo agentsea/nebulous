@@ -12,6 +12,19 @@ data:
   {{ .Values.redis.secret.keys.password}}: {{ .Values.redis.auth.password | b64enc }}
 ---
 {{- end }}
+{{- if and .Values.redis.tailscale.authKey (not .Values.headscale.create) }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.redis.tailscale.secret.name }}
+  namespace: {{ include "nebulous.namespace" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+type: Opaque
+data:
+  {{ .Values.redis.tailscale.secret.keys.authKey }}: {{ required ".Values.redis.tailscale.authKey is required" .Values.tailscale.authKey | b64enc }}
+---
+{{- end }}
 {{- if .Values.redis.create }}
 apiVersion: apps/v1
 kind: Deployment

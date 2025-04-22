@@ -1,4 +1,4 @@
-{{- if and .Values.tailscale.loginServer (not .Values.headscale.create) }}
+{{- if and (or .Values.tailscale.apiKey .Values.tailscale.authKey) (not .Values.headscale.create) }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -8,7 +8,6 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 type: Opaque
 data:
-  {{ .Values.tailscale.secret.keys.loginServer }}: {{ .Values.tailscale.loginServer | b64enc }}
   {{ .Values.tailscale.secret.keys.apiKey }}: {{ required ".Values.tailscale.apiKey is required" .Values.tailscale.apiKey | b64enc }}
   {{ .Values.tailscale.secret.keys.authKey }}: {{ required ".Values.tailscale.authKey is required" .Values.tailscale.authKey | b64enc }}
 {{- end }}
