@@ -33,6 +33,10 @@ app.kubernetes.io/instance: {{ .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- printf "%s-local-role" .Release.Name }}
 {{- end }}
 
+{{- define "nebulous.tailscaleStateSecretName" -}}
+tailscale-{{- include "nebulous.serviceAccountName" . }}-state-secret
+{{- end }}
+
 {{- define "headscale.name" -}}
 headscale
 {{- end }}
@@ -83,4 +87,8 @@ redis
 {{- else }}
 {{- required ".Values.redis.auth.host is required" .Values.redis.auth.host }}
 {{- end }}
+{{- end }}
+
+{{- define "redis.tailscaleStateSecretName" -}}
+tailscale-{{- include "redis.name" . }}-state-secret
 {{- end }}

@@ -33,8 +33,6 @@ ingress:
   annotations: { }
   # -- The ingress class.
   ingressClassName: ""
-  # -- The host field of the Ingress rule.
-  host: ""
 
 local:
   # -- If enabled, nebulous can run Pods in the local cluster.
@@ -187,10 +185,6 @@ redis:
       keys:
         # -- The key in the secret containing the Tailscale auth key.
         authKey: "AUTH_KEY"
-
-    stateSecret:
-      # -- Name of the secret where Tailscale stores its state.
-      name: "tailscale-redis-state-secret"
 
 ## Headscale configuration
 headscale:

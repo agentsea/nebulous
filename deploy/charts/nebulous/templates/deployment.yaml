@@ -19,23 +19,48 @@ spec:
         "helm.sh/restart-timestamp": "{{ now | date "20250101010203" }}"
       {{- end }}
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
       serviceAccountName: {{ include "nebulous.serviceAccountName" . }}
       containers:
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          imagePullPolicy: Always
+          env:
+            - name: TS_USERSPACE
+              value: "false"
+            - name: TS_DEBUG_FIREWALL_MODE
+              value: auto
+            - name: TS_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tailscale.secret.name }}
+                  key: {{ .Values.tailscale.secret.keys.authKey }}
+            - name: TS_HOSTNAME
+              value: "nebu"
+            - name: TS_EXTRA_ARGS
+              value: --login-server {{ include "tailscale.loginServer" . }}
+            - name: TS_KUBE_SECRET
+              value: {{ include "nebulous.tailscaleStateSecretName" . }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          securityContext:
+            privileged: true
         - name: nebulous-server
           image: {{ include "nebulous.image" . }}
           {{- with .Values.image.pullPolicy }}
           imagePullPolicy: {{.}}
           {{- end }}
-          securityContext:
-            capabilities:
-              add:
-                - NET_ADMIN
-                - NET_RAW
-            privileged: true
           ports:
             - containerPort: 3000
+          command:
+            - "/bin/sh"
+            - "-c"
+            - "exec nebu serve --host 0.0.0.0 --port 3000"
           env:
             - name: NEBU_ENCRYPTION_KEY
               valueFrom:
@@ -80,13 +105,6 @@ spec:
                   name: {{ .Values.providers.runpod.secret.name }}
                   key: {{ .Values.providers.runpod.secret.keys.apiKey }}
             {{- end }}
-            - name: TS_AUTHKEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.tailscale.secret.name }}
-                  key: {{ .Values.tailscale.secret.keys.authKey }}
-            - name: TS_LOGINSERVER
-              value: {{ include "tailscale.loginServer" . }}
             - name: RUST_LOG
               value: {{ .Values.logLevel | lower }}
             - name: NEBU_BUCKET_NAME
@@ -95,9 +113,11 @@ spec:
               value: {{ .Values.bucket.region }}
             - name: NEBU_ROOT_OWNER
               value: {{ .Values.rootOwner }}
-          envFrom:
-            - secretRef:
-                name: {{ .Values.tailscale.secret.name }}
+            - name: TS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tailscale.secret.name }}
+                  key: {{ .Values.tailscale.secret.keys.apiKey }}
           volumeMounts:
             - name: huggingface-pvc
               mountPath: /huggingface
@@ -107,8 +127,6 @@ spec:
               mountPath: /datasets
             - name: model-pvc
               mountPath: /models
-            - name: dev-net-tun
-              mountPath: /dev/net/tun
       volumes:
         - name: huggingface-pvc
           persistentVolumeClaim:
@@ -122,7 +140,3 @@ spec:
         - name: model-pvc
           persistentVolumeClaim:
             claimName: {{ .Values.storage.model.claimName }}
-        - name: dev-net-tun
-          hostPath:
-            path: /dev/net/tun
-            type: CharDevice

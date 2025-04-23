@@ -88,7 +88,7 @@ data:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| bucket.name | string | `"nebulous"` | The name of the bucket to use for Nebulous. |
+| bucket.name | string | `"nebulous-rs"` | The name of the bucket to use for Nebulous. |
 | bucket.region | string | `"us-east-1"` | The region of the bucket to use for Nebulous. |
 | encryptionKey.encodedValue | string | `""` | The 32 byte encryption key encoded in base64. Not recommended for production. |
 | encryptionKey.secret.keys.encryptionKey | string | `"ENCRYPTION_KEY"` | The key in the secret containing the encryption key. |
@@ -131,7 +131,6 @@ data:
 | image.tag | string | `""` | The nebulous image tag. Defaults to the Helm chart's appVersion. |
 | ingress.annotations | object | `{}` | Annotations to add to the Ingress resource. |
 | ingress.enabled | bool | `false` | If enabled, create an Ingress resource. |
-| ingress.host | string | `""` | The host field of the Ingress rule. |
 | ingress.ingressClassName | string | `""` | The ingress class. |
 | local.enabled | bool | `false` | If enabled, nebulous can run Pods in the local cluster. |
 | logLevel | string | `"info"` | The log level of the Nebulous server. Options are "off", "trace", "debug", "info", "warn", "error". |
@@ -168,8 +167,7 @@ data:
 | redis.tailscale.authKey | string | `""` | The Tailscale auth key for Redis. If headscale.enabled is true, this is ignored. |
 | redis.tailscale.secret.keys.authKey | string | `"AUTH_KEY"` | The key in the secret containing the Tailscale auth key. |
 | redis.tailscale.secret.name | string | `"tailscale-redis-secret"` | Name of the secret with the Tailscale auth key for Redis. |
-| redis.tailscale.stateSecret.name | string | `"tailscale-redis-state-secret"` | Name of the secret where Tailscale stores its state. |
-| rootOwner | string | `"me"` | The owner of the Nebulous root. |
+| rootOwner | string | `"agentsea"` | The owner of the Nebulous root. |
 | service.annotations | object | `{}` | Annotations to add to the Kubernetes service. |
 | service.nameOverride | string | `""` | Override the name of the Kubernetes service. |
 | service.port | int | `3000` | The port of the Kubernetes service. |

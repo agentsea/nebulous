@@ -34,13 +34,13 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: tailscale-redis
+  name: tailscale-{{ .Values.redis.serviceAccountName }}
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["create"]
   - apiGroups: [""]
-    resourceNames: ["{{ .Values.redis.tailscale.stateSecret.name }}"]
+    resourceNames: ["{{ include "redis.tailscaleStateSecretName" . }}"]
     resources: ["secrets"]
     verbs: ["get", "update", "patch"]
   - apiGroups: [""]
@@ -50,7 +50,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: tailscale-redis
+  name: tailscale-{{ .Values.redis.serviceAccountName }}
 subjects:
   - kind: ServiceAccount
     name: {{ .Values.redis.serviceAccountName }}
@@ -97,7 +97,7 @@ spec:
             - name: TS_EXTRA_ARGS
               value: --login-server {{ include "tailscale.loginServer" . }}
             - name: TS_KUBE_SECRET
-              value: {{ .Values.redis.tailscale.stateSecret.name }}
+              value: {{ include "redis.tailscaleStateSecretName" . }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
