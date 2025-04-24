@@ -107,10 +107,10 @@ where
             | ContainerStatus::Running
             | ContainerStatus::Unreachable
             | ContainerStatus::Stopping => {
-                self.watch(container).await;
+                self.watch(container).await?;
             }
             ContainerStatus::Killed => {
-                self.kill(container).await;
+                self.kill(container).await?;
             }
             ContainerStatus::Finished | ContainerStatus::Failed => {}
         }

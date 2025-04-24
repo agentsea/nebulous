@@ -3,6 +3,7 @@ use crate::resources::v1::containers::models::ContainerModelVersion;
 use crate::state::AppState;
 use std::sync::Arc;
 use tracing::{info, span, Instrument, Level};
+use crate::resources::v1::containers::models::v1::{V1Container, V1ContainerPlatform};
 
 pub struct ContainerPlatformController<V>
 where
@@ -21,9 +22,26 @@ enum ContainerPlatformStatus {
     Terminated,
 }
 
+trait PlatformStatus {
+    fn get_status(&self) -> ContainerPlatformStatus;
+    fn set_status(&mut self, status: ContainerPlatformStatus);
+
+}
+
+impl PlatformStatus for V1ContainerPlatform {
+    fn get_status(&self) -> ContainerPlatformStatus {
+        ContainerPlatformStatus::Available
+    }
+
+    fn set_status(&mut self, status: ContainerPlatformStatus) {
+
+    }
+}
+
 impl<V> ContainerPlatformController<V>
 where
     V: ContainerModelVersion,
+    V::ContainerPlatform: PlatformStatus
 {
     pub fn new(app_state: Arc<AppState>) -> Self {
         Self { app_state }
@@ -52,7 +70,7 @@ where
     }
 
     pub async fn handle(&self, mut platform: V::ContainerPlatform) {
-        let platform_status: ContainerPlatformStatus = call();
+        let platform_status: ContainerPlatformStatus = platform.get_status();
 
         match platform_status {
             ContainerPlatformStatus::Started => {
@@ -63,7 +81,7 @@ where
             | ContainerPlatformStatus::Available
             | ContainerPlatformStatus::Unavailable
             | ContainerPlatformStatus::Terminating => {
-                info!("Platform is initialized");
+                info!("Platform is active, getting status...");
                 self.watch(platform).await;
             }
             ContainerPlatformStatus::Stopped => {
@@ -76,7 +94,7 @@ where
 
     pub async fn initialize(platform: V::ContainerPlatform) {
         let kind = platform.kind.clone();
-        let platform = create_platform_from_kind(kind, platform).await;
+        let platform = create_platform_from_kind(platform).await;
     }
 
     pub async fn watch(platform: V::ContainerPlatform) {

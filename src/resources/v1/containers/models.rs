@@ -15,6 +15,8 @@ pub trait ContainerModelVersion {
     type UpdateContainer;
 
     type ContainerSearch;
+
+    type ContainerPlatform;
 }
 
 pub mod v1 {
@@ -241,6 +243,11 @@ pub mod v1 {
         pub authz: Option<V1AuthzConfig>,
     }
 
+    #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
+    pub struct V1ContainerPlatform {
+
+    }
+
     use super::ContainerModelVersion;
 
     pub struct V1;
@@ -258,5 +265,7 @@ pub mod v1 {
         type SSHKey = V1SSHKey;
         type UpdateContainer = V1UpdateContainer;
         type ContainerSearch = V1ContainerSearch;
+
+        type ContainerPlatform = V1ContainerPlatform;
     }
 }

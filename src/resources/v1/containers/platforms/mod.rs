@@ -6,3 +6,4 @@ pub mod local;
 mod nebulous;
 pub mod platform;
 pub mod ssh;
+mod http;

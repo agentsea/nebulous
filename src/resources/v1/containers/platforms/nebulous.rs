@@ -1,4 +1,5 @@
 use crate::resources::v1::containers::models::ContainerModelVersion;
+use crate::resources::v1::containers::platforms::http::HTTPConnection;
 use crate::resources::v1::containers::platforms::platform::{
     ContainerPlatform, ContainerPlatformStatus, PlatformConnection, RESTConnection,
 };
@@ -45,3 +46,5 @@ where
         todo!()
     }
 }
+
+pub(crate) type HttpNebulousPlatform<V> = NebulousPlatform<HTTPConnection<V>, V>;
