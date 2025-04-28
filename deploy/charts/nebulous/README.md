@@ -93,6 +93,7 @@ data:
 | encryptionKey.encodedValue | string | `""` | The 32 byte encryption key encoded in base64. Not recommended for production. |
 | encryptionKey.secret.keys.encryptionKey | string | `"ENCRYPTION_KEY"` | The key in the secret containing the encryption key. |
 | encryptionKey.secret.name | string | `"nebulous-secret"` | The name of the secret containing the 32 byte encryption key. |
+| extraEnv | list | `[]` | Additional environment variables to pass to the Nebulous server container. |
 | headscale.create | bool | `false` | If true, create a Headscale deployment and service. Overrides tailscale configuration. Not recommended for production. |
 | headscale.derp | object | `{"configMap":{"key":"servers.yaml","name":""},"externalMaps":[]}` | The Headscale DERP configuration. Either 'externalMapUrls' or 'configMap' must be set. |
 | headscale.derp.configMap.key | string | `"servers.yaml"` | The key in the ConfigMap containing the DERP server configuration YAML file. |
@@ -136,6 +137,11 @@ data:
 | logLevel | string | `"info"` | The log level of the Nebulous server. Options are "off", "trace", "debug", "info", "warn", "error". |
 | messageQueue.type | string | `"redis"` | The message queue type. The currently only supported value is "redis". |
 | namespaceOverride | string | `""` | Override the namespace. By default, Nebulous is deployed to the Helm release's namespace. |
+| openmeter.enabled | bool | `false` | Enable usage monitoring with OpenMeter. |
+| openmeter.secret.keys.token | string | `"TOKEN"` | The key in the eecret containing the OpenMeter API token. |
+| openmeter.secret.name | string | `"openmeter-secret"` | The name of the secrets containing the OpenMeter API token. |
+| openmeter.token | string | `""` | The OpenMeter API token. Not recommended for production. |
+| openmeter.url | string | `"https://openmeter.cloud"` | The URL to report OpenMeter data to. |
 | postgres.auth | object | `{"database":"nebulous","host":"","password":"nebulous","port":5432,"user":"nebulous"}` | Manual configuration of the Postgres connection. Except for 'host', this information is also used if 'create' is true. |
 | postgres.create | bool | `false` | If enabled, create a Postgres deployment and service. Not recommended for production. |
 | postgres.imageTag | string | `"latest"` | The postgres image tag. Ignored unless 'create' is true. |

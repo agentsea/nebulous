@@ -118,6 +118,18 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.tailscale.secret.name }}
                   key: {{ .Values.tailscale.secret.keys.apiKey }}
+            {{- if .Values.openmeter.enabled }}
+            - name: OPENMETER_URL
+              value: {{ .Values.openmeter.url }}
+            - name: OPENMETER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.openmeter.secret.name }}
+                  key: {{ .Values.openmeter.secret.keys.token }}
+            {{- end }}
+{{- with .Values.extraEnv }}
+{{ toYaml . | indent 12 }}
+{{- end }}
           volumeMounts:
             - name: huggingface-pvc
               mountPath: /huggingface

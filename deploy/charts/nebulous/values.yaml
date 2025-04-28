@@ -1,6 +1,9 @@
 # -- Override the namespace. By default, Nebulous is deployed to the Helm release's namespace.
 namespaceOverride: ""
 
+# -- Additional environment variables to pass to the Nebulous server container.
+extraEnv: []
+
 ## Nebulous configuration
 image:
   pullPolicy: "IfNotPresent"
@@ -78,6 +81,23 @@ encryptionKey:
 
   # -- The 32 byte encryption key encoded in base64. Not recommended for production.
   encodedValue: ""
+
+openmeter:
+  # -- Enable usage monitoring with OpenMeter.
+  enabled: false
+
+  # -- The URL to report OpenMeter data to.
+  url: https://openmeter.cloud
+
+  secret:
+    # -- The name of the secrets containing the OpenMeter API token.
+    name: "openmeter-secret"
+    keys:
+      # -- The key in the eecret containing the OpenMeter API token.
+      token: "TOKEN"
+
+  # -- The OpenMeter API token. Not recommended for production.
+  token: ""
 
 ## Storage configuration
 storage:

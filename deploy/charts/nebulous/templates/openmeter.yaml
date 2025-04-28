@@ -1,0 +1,12 @@
+{{- if .Values.openmeter.token }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.openmeter.secret.name }}
+  namespace: {{ include "nebulous.namespace" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+type: Opaque
+data:
+  {{ .Values.openmeter.secret.keys.token }}: {{ .Values.openmeter.token | b64enc }}
+{{- end }}
