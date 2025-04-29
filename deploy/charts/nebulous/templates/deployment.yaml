@@ -50,6 +50,11 @@ spec:
                   fieldPath: metadata.uid
           securityContext:
             privileged: true
+          volumeMounts:
+            - name: var-run-tailscale
+              mountPath: /var/run/tailscale
+            - name: tmp
+              mountPath: /tmp
         - name: nebulous-server
           image: {{ include "nebulous.image" . }}
           {{- with .Values.image.pullPolicy }}
@@ -139,6 +144,10 @@ spec:
               mountPath: /datasets
             - name: model-pvc
               mountPath: /models
+            - name: var-run-tailscale
+              mountPath: /var/run/tailscale
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: huggingface-pvc
           persistentVolumeClaim:
@@ -152,3 +161,7 @@ spec:
         - name: model-pvc
           persistentVolumeClaim:
             claimName: {{ .Values.storage.model.claimName }}
+        - name: var-run-tailscale
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
