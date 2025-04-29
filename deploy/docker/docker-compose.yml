@@ -11,6 +11,8 @@ services:
     volumes:
       - nebu-ts-authkey:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
+      - nebu-ts-sock:/var/run/tailscale
+      - nebu-tmp:/tmp
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -26,6 +28,9 @@ services:
       NEBU_BUCKET_NAME: nebulous
       NEBU_BUCKET_REGION: us-east-1
       NEBU_ROOT_OWNER: me
+    volumes:
+      - nebu-ts-sock:/var/run/tailscale
+      - nebu-tmp:/tmp
     network_mode: service:tailscale
 
   redis:
@@ -43,4 +48,8 @@ services:
 
 volumes:
   nebu-ts-authkey:
+    driver: local
+  nebu-ts-sock:
+    driver: local
+  nebu-tmp:
     driver: local
