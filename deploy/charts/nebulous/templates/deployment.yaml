@@ -7,6 +7,8 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: {{ include "nebulous.appSelector" . }}
@@ -19,6 +21,8 @@ spec:
         "helm.sh/restart-timestamp": "{{ now | date "20250101010203" }}"
       {{- end }}
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       serviceAccountName: {{ include "nebulous.serviceAccountName" . }}
       containers:
         - name: nebulous-server
@@ -26,6 +30,12 @@ spec:
           {{- with .Values.image.pullPolicy }}
           imagePullPolicy: {{.}}
           {{- end }}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+            privileged: true
           ports:
             - containerPort: 3000
           env:
@@ -38,7 +48,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgres.secret.name }}
-                  key: {{ .Values.postgres.secret.keys.connection_string }}
+                  key: {{ .Values.postgres.secret.keys.connectionString }}
             - name: MESSAGE_QUEUE_TYPE
               value: {{ .Values.messageQueue.type }}
             {{- if eq .Values.messageQueue.type "redis" }}
@@ -46,7 +56,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.redis.secret.name }}
-                  key: {{ .Values.redis.secret.keys.connection_string }}
+                  key: {{ .Values.redis.secret.keys.connectionString }}
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -62,14 +72,14 @@ spec:
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name:  {{ .Values.providers.aws.secret.name }}
+                  name: {{ .Values.providers.aws.secret.name }}
                   key: {{ .Values.providers.aws.secret.keys.secretAccessKey }}
             {{- end }}
             {{- if .Values.providers.runpod.enabled }}
             - name: RUNPOD_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name:  {{ .Values.providers.runpod.secret.name }}
+                  name: {{ .Values.providers.runpod.secret.name }}
                   key: {{ .Values.providers.runpod.secret.keys.apiKey }}
             {{- end }}
             - name: TS_AUTHKEY
@@ -79,9 +89,9 @@ spec:
                   key: {{ .Values.tailscale.secret.keys.authKey }}
             - name: TS_LOGINSERVER
               valueFrom:
-                  secretKeyRef:
-                    name: {{ .Values.tailscale.secret.name }}
-                    key: {{ .Values.tailscale.secret.keys.loginServer }}
+                secretKeyRef:
+                  name: {{ .Values.tailscale.secret.name }}
+                  key: {{ .Values.tailscale.secret.keys.loginServer }}
             - name: RUST_LOG
               value: {{ .Values.logLevel | lower }}
           envFrom:
@@ -96,6 +106,8 @@ spec:
               mountPath: /datasets
             - name: model-pvc
               mountPath: /models
+            - name: dev-net-tun
+              mountPath: /dev/net/tun
       volumes:
         - name: huggingface-pvc
           persistentVolumeClaim:
@@ -109,3 +121,7 @@ spec:
         - name: model-pvc
           persistentVolumeClaim:
             claimName: {{ .Values.storage.model.claimName }}
+        - name: dev-net-tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
