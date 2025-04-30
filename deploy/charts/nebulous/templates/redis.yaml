@@ -31,6 +31,7 @@ kind: ServiceAccount
 metadata:
   name: {{ .Values.redis.serviceAccountName }}
 ---
+# Reference: https://github.com/tailscale/tailscale/blob/main/docs/k8s/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -78,6 +79,8 @@ spec:
     spec:
       serviceAccountName: {{ .Values.redis.serviceAccountName }}
       containers:
+        # Reference: https://github.com/tailscale/tailscale/blob/main/docs/k8s/userspace-sidecar.yaml
+        # Docs: https://tailscale.com/kb/1185/kubernetes
         - name: tailscale
           image: tailscale/tailscale:latest
           imagePullPolicy: Always

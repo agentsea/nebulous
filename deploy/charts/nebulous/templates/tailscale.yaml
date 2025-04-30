@@ -12,6 +12,7 @@ data:
   {{ .Values.tailscale.secret.keys.authKey }}: {{ required ".Values.tailscale.authKey is required" .Values.tailscale.authKey | b64enc }}
 ---
 {{- end }}
+# Reference: https://github.com/tailscale/tailscale/blob/main/docs/k8s/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:

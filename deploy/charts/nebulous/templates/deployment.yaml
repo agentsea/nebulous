@@ -21,6 +21,8 @@ spec:
     spec:
       serviceAccountName: {{ include "nebulous.serviceAccountName" . }}
       containers:
+        # Reference: https://github.com/tailscale/tailscale/blob/main/docs/k8s/sidecar.yaml
+        # Docs: https://tailscale.com/kb/1185/kubernetes
         - name: tailscale
           image: tailscale/tailscale:latest
           imagePullPolicy: Always
@@ -51,6 +53,7 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
+            # Share /var/run/tailscale and /tmp to provide nebulous access to the Tailscale daemon
             - name: var-run-tailscale
               mountPath: /var/run/tailscale
             - name: tmp
@@ -149,6 +152,7 @@ spec:
               mountPath: /datasets
             - name: model-pvc
               mountPath: /models
+            # Share /var/run/tailscale and /tmp to provide nebulous access to the Tailscale daemon
             - name: var-run-tailscale
               mountPath: /var/run/tailscale
             - name: tmp
