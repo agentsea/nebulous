@@ -328,12 +328,15 @@ providers:
     enabled: false
 
     secret:
-      # -- The name of the secret containing the API key.
+      # -- The name of the secret containing the Runpod credentials.
       name: "runpod-secret"
       keys:
         # -- The key in the secret containing the API key.
         apiKey: "RUNPOD_API_KEY"
+        # -- The key in the secret containing the container registry auth ID.
+        containerRegistryAuthId: "RUNPOD_CONTAINER_REGISTRY_AUTH_ID"
 
-    # -- Manual configuration of the Runpod API key. Not recommended for production.
+    # -- Manual configuration of the Runpod credentials. Not recommended for production.
     auth:
       apiKey: ""
+      containerRegistryAuthId: ""

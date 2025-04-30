@@ -109,6 +109,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.providers.runpod.secret.name }}
                   key: {{ .Values.providers.runpod.secret.keys.apiKey }}
+            - name: RUNPOD_CONTAINER_REGISTRY_AUTH_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.providers.runpod.secret.name }}
+                  key: {{ .Values.providers.runpod.secret.keys.containerRegistryAuthId }}
             {{- end }}
             - name: RUST_LOG
               value: {{ .Values.logLevel | lower }}

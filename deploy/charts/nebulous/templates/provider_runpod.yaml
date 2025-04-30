@@ -1,5 +1,5 @@
 {{- if .Values.providers.runpod.enabled }}
-{{- if .Values.providers.runpod.auth.apiKey }}
+{{- if or .Values.providers.runpod.auth.apiKey .Values.providers.runpod.auth.containerRegistryAuthId }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -9,6 +9,7 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 type: Opaque
 data:
-  {{ .Values.providers.runpod.secret.keys.apiKey }}: {{ .Values.providers.runpod.auth.apiKey | b64enc }}
+  {{ .Values.providers.runpod.secret.keys.apiKey }}: {{ required ".Values.providers.runpod.auth.apiKey is required" .Values.providers.runpod.auth.apiKey | b64enc }}
+  {{ .Values.providers.runpod.secret.keys.containerRegistryAuthId }}: {{ required ".Values.providers.runpod.auth.containerRegistryAuthId is required" .Values.providers.runpod.auth.containerRegistryAuthId | b64enc }}
 {{- end }}
 {{- end }}

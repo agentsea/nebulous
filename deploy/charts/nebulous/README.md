@@ -157,10 +157,11 @@ data:
 | providers.aws.secret.keys.accessKeyId | string | `"AWS_ACCESS_KEY_ID"` | The key in the secret containing the access key ID. |
 | providers.aws.secret.keys.secretAccessKey | string | `"AWS_SECRET_ACCESS_KEY"` | The key in the secret containing the secret access key. |
 | providers.aws.secret.name | string | `"aws-secret"` | The name of the secret containing the AWS credentials. |
-| providers.runpod.auth | object | `{"apiKey":""}` | Manual configuration of the Runpod API key. Not recommended for production. |
+| providers.runpod.auth | object | `{"apiKey":"","containerRegistryAuthId":""}` | Manual configuration of the Runpod credentials. Not recommended for production. |
 | providers.runpod.enabled | bool | `false` | Enable access to Runpod. |
 | providers.runpod.secret.keys.apiKey | string | `"RUNPOD_API_KEY"` | The key in the secret containing the API key. |
-| providers.runpod.secret.name | string | `"runpod-secret"` | The name of the secret containing the API key. |
+| providers.runpod.secret.keys.containerRegistryAuthId | string | `"RUNPOD_CONTAINER_REGISTRY_AUTH_ID"` | The key in the secret containing the container registry auth ID. |
+| providers.runpod.secret.name | string | `"runpod-secret"` | The name of the secret containing the Runpod credentials. |
 | redis.auth | object | `{"database":0,"host":"","password":"nebulous","port":6379}` | Manual configuration of the Redis connection. Except for 'host', this information is also used if 'create' is true. |
 | redis.create | bool | `false` | If enabled, create a Redis deployment and service. Not recommended for production. |
 | redis.imageTag | string | `"latest"` | The redis image tag. Ignored unless 'create' is true. |
