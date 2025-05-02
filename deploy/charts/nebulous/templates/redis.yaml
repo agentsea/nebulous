@@ -79,6 +79,22 @@ spec:
     spec:
       serviceAccountName: {{ .Values.redis.serviceAccountName }}
       containers:
+        - name: redis
+          image: "redis:{{ .Values.redis.imageTag }}"
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              exec redis-server --requirepass "$REDIS_PASSWORD"
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.secret.name }}
+                  key: {{ .Values.redis.secret.keys.password }}
+          ports:
+            - containerPort: 6379
         # Reference: https://github.com/tailscale/tailscale/blob/main/docs/k8s/userspace-sidecar.yaml
         # Docs: https://tailscale.com/kb/1185/kubernetes
         - name: tailscale
@@ -109,22 +125,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-        - name: redis
-          image: "redis:{{ .Values.redis.imageTag }}"
-          command:
-            - /bin/sh
-            - -c
-          args:
-            - |
-              exec redis-server --requirepass "$REDIS_PASSWORD"
-          env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.redis.secret.name }}
-                  key: {{ .Values.redis.secret.keys.password }}
-          ports:
-            - containerPort: 6379
 ---
 apiVersion: v1
 kind: Service

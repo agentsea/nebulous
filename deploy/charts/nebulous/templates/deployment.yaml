@@ -21,43 +21,6 @@ spec:
     spec:
       serviceAccountName: {{ include "nebulous.serviceAccountName" . }}
       containers:
-        # Reference: https://github.com/tailscale/tailscale/blob/main/docs/k8s/sidecar.yaml
-        # Docs: https://tailscale.com/kb/1185/kubernetes
-        - name: tailscale
-          image: tailscale/tailscale:latest
-          imagePullPolicy: Always
-          env:
-            - name: TS_USERSPACE
-              value: "false"
-            - name: TS_DEBUG_FIREWALL_MODE
-              value: auto
-            - name: TS_AUTH_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.tailscale.secret.name }}
-                  key: {{ .Values.tailscale.secret.keys.authKey }}
-            - name: TS_HOSTNAME
-              value: "nebu"
-            - name: TS_EXTRA_ARGS
-              value: --login-server {{ include "tailscale.loginServer" . }}
-            - name: TS_KUBE_SECRET
-              value: {{ include "nebulous.tailscaleStateSecretName" . }}
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: POD_UID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.uid
-          securityContext:
-            privileged: true
-          volumeMounts:
-            # Share /var/run/tailscale and /tmp to provide nebulous access to the Tailscale daemon
-            - name: var-run-tailscale
-              mountPath: /var/run/tailscale
-            - name: tmp
-              mountPath: /tmp
         - name: nebulous-server
           image: {{ include "nebulous.image" . }}
           {{- with .Values.image.pullPolicy }}
@@ -152,6 +115,43 @@ spec:
               mountPath: /datasets
             - name: model-pvc
               mountPath: /models
+            # Share /var/run/tailscale and /tmp to provide nebulous access to the Tailscale daemon
+            - name: var-run-tailscale
+              mountPath: /var/run/tailscale
+            - name: tmp
+              mountPath: /tmp
+        # Reference: https://github.com/tailscale/tailscale/blob/main/docs/k8s/sidecar.yaml
+        # Docs: https://tailscale.com/kb/1185/kubernetes
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          imagePullPolicy: Always
+          env:
+            - name: TS_USERSPACE
+              value: "false"
+            - name: TS_DEBUG_FIREWALL_MODE
+              value: auto
+            - name: TS_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tailscale.secret.name }}
+                  key: {{ .Values.tailscale.secret.keys.authKey }}
+            - name: TS_HOSTNAME
+              value: "nebu"
+            - name: TS_EXTRA_ARGS
+              value: --login-server {{ include "tailscale.loginServer" . }}
+            - name: TS_KUBE_SECRET
+              value: {{ include "nebulous.tailscaleStateSecretName" . }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          securityContext:
+            privileged: true
+          volumeMounts:
             # Share /var/run/tailscale and /tmp to provide nebulous access to the Tailscale daemon
             - name: var-run-tailscale
               mountPath: /var/run/tailscale
