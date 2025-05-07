@@ -3,6 +3,17 @@ entries:
   nebulous:
   - apiVersion: v2
     appVersion: 0.1.86
+    created: "2025-05-07T22:25:44.938660594Z"
+    description: A cross-cloud container orchestrator for AI workloads
+    digest: cd3a18fee817dd03dece19628ef5a026fd3057b125b274489a857099e174b052
+    home: https://github.com/agentsea/nebulous
+    name: nebulous
+    type: application
+    urls:
+    - https://github.com/agentsea/nebulous/releases/download/nebulous-0.2.3/nebulous-0.2.3.tgz
+    version: 0.2.3
+  - apiVersion: v2
+    appVersion: 0.1.86
     created: "2025-05-05T20:47:17.9325102Z"
     description: A cross-cloud container orchestrator for AI workloads
     digest: b9c74bc170645218c74ba94b1613690b9936cc82a986b6592eb9e8e5bd8581cc
@@ -34,4 +45,4 @@ entries:
     urls:
     - https://github.com/agentsea/nebulous/releases/download/nebulous-0.1.1/nebulous-0.1.1.tgz
     version: 0.1.1
-generated: "2025-05-05T20:47:17.932526159Z"
+generated: "2025-05-07T22:25:44.938679719Z"
