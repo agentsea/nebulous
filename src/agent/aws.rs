@@ -5,7 +5,8 @@ use aws_sdk_s3::config::{Credentials, Region as S3Region};
 use aws_sdk_s3::Client as S3Client;
 use aws_sdk_sts::primitives::DateTime;
 use aws_sdk_sts::Client as StsClient;
-use serde_json::json;
+use serde_json::{json, to_string};
+use std::env;
 use tracing::{debug, error, info, warn};
 
 pub struct S3ClientInternal {
@@ -123,10 +124,24 @@ pub async fn create_s3_scoped_user(
     let client = IamClient::new(&config);
 
     // Create a unique username
-    let username = format!("s3-scoped-{}-{}", namespace, name);
+    let username = format!("nebu-{}-{}", namespace, name);
 
     // Create the IAM user
-    client.create_user().user_name(&username).send().await?;
+    match env::var("AWS_NEBU_USER_BOUNDARY") {
+        Ok(boundary_arn) => {
+            client.create_user()
+                .user_name(&username)
+                .permissions_boundary(&boundary_arn)
+                .send()
+                .await?;
+        }
+        Err(_) => {
+            client.create_user()
+                .user_name(&username)
+                .send()
+                .await?;
+        }
+    }
 
     let policy_document = json!({
       "Version": "2012-10-17",
@@ -165,18 +180,10 @@ pub async fn create_s3_scoped_user(
 
     // Create the policy
     let policy_name = format!("s3-scope-{}-{}", namespace, name);
-    let policy_response = client
-        .create_policy()
-        .policy_name(&policy_name)
-        .policy_document(policy_document.to_string())
-        .send()
-        .await?;
-
-    // Attach the policy to the user
-    client
-        .attach_user_policy()
+    client.put_user_policy()
         .user_name(&username)
-        .policy_arn(policy_response.policy().unwrap().arn().unwrap())
+        .policy_name(&policy_name)
+        .policy_document(to_string(&policy_document)?)
         .send()
         .await?;
 
@@ -203,8 +210,7 @@ pub async fn delete_s3_scoped_user(namespace: &str, name: &str) -> Result<()> {
         .await;
     let client = IamClient::new(&config);
 
-    let username = format!("s3-scoped-{}-{}", namespace, name);
-    // let policy_name = format!("s3-scope-{}-{}", namespace, name); // Keep for reference, maybe needed if ARN lookup fails
+    let username = format!("nebu-{}-{}", namespace, name);
 
     // --- 1. Delete Access Keys ---
     debug!("Attempting to delete access keys for user: {}", username);
@@ -264,125 +270,7 @@ pub async fn delete_s3_scoped_user(namespace: &str, name: &str) -> Result<()> {
         }
     }
 
-    // --- 2. Detach Managed Policy ---
-    debug!(
-        "Attempting to detach managed policies for user: {}",
-        username
-    );
-    let mut policy_arn_to_delete: Option<String> = None;
-    match client
-        .list_attached_user_policies()
-        .user_name(&username)
-        .send()
-        .await
-    {
-        Ok(attached_policies_output) => {
-            if let Some(policies) = attached_policies_output.attached_policies {
-                // Assuming our function attaches only one specific policy
-                if let Some(policy) = policies.first() {
-                    // Take the first, assuming it's ours
-                    if let Some(arn) = policy.policy_arn() {
-                        debug!("Found attached policy {} for user {}", arn, username);
-                        policy_arn_to_delete = Some(arn.to_string());
-                        debug!("Detaching policy {} from user {}", arn, username);
-                        match client
-                            .detach_user_policy()
-                            .user_name(&username)
-                            .policy_arn(arn)
-                            .send()
-                            .await
-                        {
-                            Ok(_) => debug!("Successfully detached policy {}", arn),
-                            Err(e) => {
-                                if let Some(aws_err) = e.as_service_error() {
-                                    if aws_err.is_no_such_entity_exception() {
-                                        warn!("Policy {} or User {} not found during detachment, proceeding.", arn, username);
-                                    } else {
-                                        error!(
-                                            "Failed to detach policy {} from user {}: {}",
-                                            arn, username, e
-                                        );
-                                        // Decide if fatal. Continuing for now.
-                                    }
-                                } else {
-                                    error!(
-                                        "Failed to detach policy {} from user {}: {}",
-                                        arn, username, e
-                                    );
-                                }
-                            }
-                        }
-                    } else {
-                        warn!(
-                            "Attached policy found for user {} but ARN is missing.",
-                            username
-                        );
-                    }
-                } else {
-                    debug!("No attached policies found for user {}", username);
-                }
-            } else {
-                debug!("No attached policies found for user {}", username);
-            }
-        }
-        Err(e) => {
-            if let Some(aws_err) = e.as_service_error() {
-                if aws_err.is_no_such_entity_exception() {
-                    warn!(
-                        "User {} not found when listing attached policies.",
-                        username
-                    );
-                    // If user doesn't exist, policy can't be attached.
-                } else {
-                    error!(
-                        "Failed to list attached policies for user {}: {}",
-                        username, e
-                    );
-                    return Err(e.into());
-                }
-            } else {
-                error!(
-                    "Failed to list attached policies for user {}: {}",
-                    username, e
-                );
-                return Err(e.into());
-            }
-        }
-    }
-
-    // --- 3. Delete the Managed Policy ---
-    if let Some(ref arn) = policy_arn_to_delete {
-        debug!("Attempting to delete policy: {}", arn);
-        match client.delete_policy().policy_arn(arn).send().await {
-            Ok(_) => debug!("Successfully deleted policy {}", arn),
-            Err(e) => {
-                if let Some(aws_err) = e.as_service_error() {
-                    if aws_err.is_no_such_entity_exception() {
-                        warn!(
-                            "Policy {} not found during deletion, likely already deleted.",
-                            arn
-                        );
-                    } else if aws_err.is_delete_conflict_exception() {
-                        error!("Failed to delete policy {} due to conflict (maybe still attached?): {}", arn, e);
-                        // This might be fatal if the policy should have been detached.
-                        // Consider returning an error here. For now, just logging.
-                    } else {
-                        error!("Failed to delete policy {}: {}", arn, e);
-                        // Decide if fatal. Continuing for now.
-                    }
-                } else {
-                    error!("Failed to delete policy {}: {}", arn, e);
-                }
-            }
-        }
-    } else {
-        debug!(
-            "Skipping policy deletion as no attached policy ARN was found for user {}.",
-            username
-        );
-    }
-
-    // --- 4. Delete the User ---
+    // --- 2. Delete the User ---
     debug!("Attempting to delete user: {}", username);
     match client.delete_user().user_name(&username).send().await {
         Ok(_) => debug!("Successfully deleted user {}", username),

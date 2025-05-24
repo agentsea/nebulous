@@ -171,7 +171,7 @@ impl Config {
             redis_publish_url: env::var("REDIS_PUBLISH_URL").ok(),
             database_url: env::var("DATABASE_URL")
                 .unwrap_or_else(|_| "sqlite://.data/data.db".to_string()),
-            tailscale_api_key: env::var("TAILSCALE_API_KEY").ok(),
+            tailscale_api_key: env::var("TS_API_KEY").or_else(|_| env::var("TAILSCALE_API_KEY")).ok(),
             tailscale_tailnet: env::var("TAILSCALE_TAILNET").ok(),
             bucket_name: env::var("NEBU_BUCKET_NAME")
                 .or_else(|_| env::var("NEBULOUS_BUCKET_NAME"))
