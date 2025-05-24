@@ -338,7 +338,7 @@ pub trait ContainerPlatform {
         let tailscale_api_key = CONFIG
             .tailscale_api_key
             .clone()
-            .expect("TAILSCALE_API_KEY not found in config");
+            .expect("Tailscale API key not found in config");
         debug!("Tailscale key: {}", tailscale_api_key);
         TailscaleClient::new(tailscale_api_key)
     }
