@@ -10,7 +10,6 @@ type: Opaque
 data:
   {{ .Values.redis.secret.keys.connectionString }}: {{ printf "redis://:%s@%s:%d/%d" .Values.redis.auth.password (include "redis.host" .) (int .Values.redis.auth.port) (int .Values.redis.auth.database) | b64enc }}
   {{ .Values.redis.secret.keys.password}}: {{ .Values.redis.auth.password | b64enc }}
-  {{ .Values.redis.secret.keys.publicConnectionString }}: {{ printf "redis://:%s@%s:%d/%d" .Values.redis.auth.password (include "redis.publicHost" .) (int .Values.redis.auth.port) (int .Values.redis.auth.database) | b64enc }}
 ---
 {{- end }}
 {{- if and .Values.redis.tailscale.authKey (not .Values.headscale.create) }}

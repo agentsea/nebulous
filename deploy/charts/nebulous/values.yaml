@@ -103,7 +103,6 @@ tailscale:
   # -- The resource requests and limits for the Nebulous server's Tailscale sidecar container.
   resources: { }
 
-
 encryptionKey:
   secret:
     # -- The name of the secret containing the 32 byte encryption key.
@@ -202,8 +201,6 @@ redis:
       connectionString: "CONNECTION_STRING"
       # -- The key in the secret containing the Redis password.
       password: "PASSWORD"
-      # -- The key in the secret containing the Redis connection string used by Nebulous workloads.
-      publicConnectionString: "PUBLIC_CONNECTION_STRING"
 
   # -- Manual configuration of the Redis connection. Except for 'host', this information is also used if 'create' is true.
   auth:
@@ -222,9 +219,6 @@ redis:
     annotations: { }
     # -- Override the name of the Kubernetes service.
     nameOverride: ""
-
-  # -- The host that Nebulous workloads use to connect to Redis. This is usually its address on the tailnet. Ignored when 'headscale.create' is true.
-  publicHost: ""
 
   # -- The name of the Kubernetes service account for the Redis Pod.
   serviceAccountName: "redis"

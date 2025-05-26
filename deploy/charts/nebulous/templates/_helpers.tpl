@@ -95,14 +95,6 @@ redis
 {{- end }}
 {{- end }}
 
-{{- define "redis.publicHost" -}}
-{{- if .Values.headscale.create }}
-{{- printf "%s.%s" (include "redis.name" .) .Values.headscale.dns.baseDomain }}
-{{- else }}
-{{- required ".Values.redis.publicHost is required" .Values.redis.publicHost }}
-{{- end }}
-{{- end }}
-
 {{- define "redis.tailscaleStateSecretName" -}}
 tailscale-{{- include "redis.name" . }}-state-secret
 {{- end }}

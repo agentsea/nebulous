@@ -1,6 +1,6 @@
 # nebulous
 
-![Version: 0.2.6](https://img.shields.io/badge/Version-0.2.6-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.88](https://img.shields.io/badge/AppVersion-0.1.88-informational?style=flat-square)
+![Version: 0.2.7](https://img.shields.io/badge/Version-0.2.7-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.88](https://img.shields.io/badge/AppVersion-0.1.88-informational?style=flat-square)
 
 A cross-cloud container orchestrator for AI workloads
 
@@ -155,11 +155,9 @@ data:
 | redis.auth | object | `{"database":0,"host":"","password":"nebulous","port":6379}` | Manual configuration of the Redis connection. Except for 'host', this information is also used if 'create' is true. |
 | redis.create | bool | `false` | If enabled, create a Redis deployment and service. Not recommended for production. |
 | redis.imageTag | string | `"8"` | The redis image tag. Ignored unless 'create' is true. |
-| redis.publicHost | string | `""` | The host that Nebulous workloads use to connect to Redis. This is usually its address on the tailnet. Ignored when 'headscale.create' is true. |
 | redis.resources | object | `{}` | The resource requests and limits for the Redis container. |
 | redis.secret.keys.connectionString | string | `"CONNECTION_STRING"` | The key in the secret containing the Redis connection string. |
 | redis.secret.keys.password | string | `"PASSWORD"` | The key in the secret containing the Redis password. |
-| redis.secret.keys.publicConnectionString | string | `"PUBLIC_CONNECTION_STRING"` | The key in the secret containing the Redis connection string used by Nebulous workloads. |
 | redis.secret.name | string | `"redis-secret"` | Name of the secret with the Redis connection string and password. |
 | redis.service.annotations | object | `{}` | The annotations to add to the Kubernetes service. |
 | redis.service.nameOverride | string | `""` | Override the name of the Kubernetes service. |
