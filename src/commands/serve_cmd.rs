@@ -1,3 +1,4 @@
+use nebulous::config::ClientConfig;
 use nebulous::create_app;
 use nebulous::create_app_state;
 use nebulous::proxy::server::start_proxy;
@@ -8,7 +9,6 @@ use std::error::Error;
 use std::io::Write;
 use std::ops::Add;
 use std::process::{Command, Stdio};
-use nebulous::config::ClientConfig;
 
 pub async fn launch_server(
     host: String,

@@ -1,8 +1,10 @@
-use crate::resources::v1::containers::models::ContainerModelVersion;
+use async_trait::async_trait;
 use crate::resources::v1::containers::models::v1::V1ContainerPlatform;
+use crate::resources::v1::containers::models::ContainerModelVersion;
 use crate::resources::v1::containers::platforms::platform::{PlatformConnection, RESTConnection};
 
 pub struct HTTPConnection<V: ContainerModelVersion> {
+    version: std::marker::PhantomData<V>,
     host: String,
     health_check_path: String,
 }
@@ -21,7 +23,12 @@ impl GetHttpConnectionDetails for V1ContainerPlatform {
         todo!()
     }
 }
-impl<V> PlatformConnection<V> for HTTPConnection<V> {
+
+#[async_trait]
+impl<V> PlatformConnection<V> for HTTPConnection<V>
+where
+    V: ContainerModelVersion,
+{
     fn from_spec(spec: V::ContainerPlatform) -> Self {
         todo!()
     }
@@ -43,7 +50,11 @@ impl<V> PlatformConnection<V> for HTTPConnection<V> {
     }
 }
 
-impl<V> RESTConnection for HTTPConnection<V> {
+#[async_trait]
+impl<V> RESTConnection for HTTPConnection<V>
+where
+    V: ContainerModelVersion,
+{
     async fn get(&self, path: &str) -> anyhow::Result<String> {
         let client = reqwest::Client::new();
         client

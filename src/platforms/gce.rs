@@ -1,7 +1,8 @@
 use super::docker::DockerPlatform;
-use super::platform::{ContainerPlatform, ContainerPlatformStatus};
+use super::platform::{ContainerPlatform, ContainerPlatformBuilder, ContainerPlatformStatus};
 use super::ssh::SSHConnection;
 use crate::resources::v1::containers::models::ContainerModelVersion;
+use async_trait::async_trait;
 
 pub struct GCEPlatform<V: ContainerModelVersion> {
     inner: DockerPlatform<SSHConnection<V>, V>,
@@ -23,8 +24,11 @@ impl<V: ContainerModelVersion> GCEPlatform<V> {
     }
 }
 
-impl<V: ContainerModelVersion> ContainerPlatform<V> for GCEPlatform<V> {
-    fn validate(spec: V::ContainerPlatform) -> anyhow::Result<()> {
+impl<V> ContainerPlatformBuilder<V> for GCEPlatform<V>
+where
+    V: ContainerModelVersion,
+{
+    fn validate(spec: &V::ContainerPlatform) -> anyhow::Result<()> {
         if spec.gce.gce_zone.is_empty() {
             return Err(anyhow::anyhow!("GCE zone is required"));
         }
@@ -39,6 +43,13 @@ impl<V: ContainerModelVersion> ContainerPlatform<V> for GCEPlatform<V> {
         let connection = SSHConnection::from_spec(spec);
         GCEPlatform::new(gce_zone, gce_instance, connection)
     }
+}
+
+#[async_trait]
+impl<V> ContainerPlatform<V> for GCEPlatform<V>
+where
+    V: ContainerModelVersion,
+{
     async fn create(&self, container: V::Container) -> anyhow::Result<V::Container> {
         self.inner.create(container).await
     }
@@ -47,15 +58,15 @@ impl<V: ContainerModelVersion> ContainerPlatform<V> for GCEPlatform<V> {
         self.inner.get(id).await
     }
 
-    async fn delete(&self, id: &str) -> anyhow::Result<()> {
+    async fn delete(&self, id: &str) -> anyhow::Result<V::Container> {
         self.inner.delete(id).await
     }
 
-    async fn logs(&self, id: &str) -> anyhow::Result<()> {
+    async fn logs(&self, id: &str) -> anyhow::Result<String> {
         todo!()
     }
 
-    async fn exec(&self, id: &str, command: &str) -> anyhow::Result<()> {
+    async fn exec(&self, id: &str, command: &str) -> anyhow::Result<String> {
         todo!()
     }
 

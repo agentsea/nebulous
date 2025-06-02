@@ -28,23 +28,22 @@ pub mod streams;
 pub mod validate;
 pub mod volumes;
 
+pub mod conversion;
+pub mod controllers;
+pub mod platforms;
+
 use crate::config::SERVER_CONFIG;
 use crate::handlers::v1::namespaces::ensure_namespace;
 use crate::handlers::v1::volumes::ensure_volume;
 use axum::Router;
 use db::init_db;
-use rdkafka::admin::AdminClient;
-use rdkafka::producer::FutureProducer;
-use rdkafka::ClientConfig;
 use routes::create_routes;
 use sea_orm::DatabaseConnection;
 use state::AppState;
 use state::MessageQueue;
-use std::env;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use url::Url;
 
 /// Create and return the application state.
 pub async fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> {

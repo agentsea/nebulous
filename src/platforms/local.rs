@@ -1,16 +1,18 @@
 use super::platform::{PlatformConnection, ShellConnection};
 use crate::resources::v1::containers::models::ContainerModelVersion;
 use anyhow::Context;
+use async_trait::async_trait;
 
 pub struct LocalShell<V: ContainerModelVersion> {
     version: std::marker::PhantomData<V>,
 }
 
+#[async_trait]
 impl<V> PlatformConnection<V> for LocalShell<V>
 where
     V: ContainerModelVersion,
 {
-    async fn from_spec(spec: V::ContainerPlatform) -> Self {
+    fn from_spec(spec: V::ContainerPlatform) -> Self {
         LocalShell {
             version: std::marker::PhantomData,
         }
@@ -36,6 +38,7 @@ where
     }
 }
 
+#[async_trait]
 impl<V> ShellConnection for LocalShell<V>
 where
     V: ContainerModelVersion,

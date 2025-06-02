@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use crate::resources::v1::containers::models::ContainerModelVersion;
 use crate::resources::v1::containers::platforms::platform::{PlatformConnection, ShellConnection};
 
@@ -9,8 +10,13 @@ pub struct SSHConnection<V: ContainerModelVersion> {
     pub private_key: String,
 }
 
-impl<V> PlatformConnection<V> for SSHConnection<V> {
-    async fn from_spec(spec: V::ContainerPlatform) -> Self {
+
+#[async_trait]
+impl<V> PlatformConnection<V> for SSHConnection<V>
+where
+    V: ContainerModelVersion,
+{
+    fn from_spec(spec: V::ContainerPlatform) -> Self {
         SSHConnection {
             version: std::marker::PhantomData,
             host: spec.ssh.host,
@@ -35,7 +41,12 @@ impl<V> PlatformConnection<V> for SSHConnection<V> {
     }
 }
 
-impl<V> ShellConnection for SSHConnection<V> {
+
+#[async_trait]
+impl<V> ShellConnection for SSHConnection<V>
+where
+    V: ContainerModelVersion,
+{
     async fn run_command(&self, method: &str) -> anyhow::Result<String> {
         // Implement SSH command execution logic here
         Ok(format!("Executed command: {}", method))

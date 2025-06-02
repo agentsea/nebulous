@@ -1,26 +1,37 @@
+use async_trait::async_trait;
 use crate::resources::v1::containers::models::ContainerModelVersion;
 use crate::resources::v1::containers::platforms::http::HTTPConnection;
-use crate::resources::v1::containers::platforms::platform::{
-    ContainerPlatform, ContainerPlatformStatus, PlatformConnection, RESTConnection,
-};
+use crate::resources::v1::containers::platforms::platform::{ContainerPlatform, ContainerPlatformBuilder, ContainerPlatformStatus, PlatformConnection, RESTConnection};
 
 pub struct NebulousPlatform<C, V>
 where
     C: PlatformConnection<V> + RESTConnection,
     V: ContainerModelVersion,
 {
-    pub(crate) version: std::marker::PhantomData<V>,
+    version: std::marker::PhantomData<V>,
     connection: C,
 }
 
-impl<C, V> ContainerPlatform<V> for NebulousPlatform<C, V>
+impl<C, V> ContainerPlatformBuilder<V> for NebulousPlatform<C, V>
 where
     C: PlatformConnection<V> + RESTConnection,
     V: ContainerModelVersion,
 {
     fn from_spec(spec: V::ContainerPlatform) -> Self {
-        todo!()
+        let connection = C::from_spec(spec);
+        NebulousPlatform {
+            version: std::marker::PhantomData,
+            connection,
+        }
     }
+}
+
+#[async_trait]
+impl<C, V> ContainerPlatform<V> for NebulousPlatform<C, V>
+where
+    C: PlatformConnection<V> + RESTConnection,
+    V: ContainerModelVersion,
+{
 
     async fn create(&self, container: V::Container) -> anyhow::Result<V::Container> {
         todo!()

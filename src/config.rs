@@ -6,7 +6,6 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct ClientConfig {
     pub servers: Vec<ClientServerConfig>,
@@ -248,7 +247,6 @@ pub struct TailscaleConfig {
 
 #[derive(Debug, Clone)]
 pub struct ServerAuthConfig {
-    pub internal: bool,
     pub url: Option<String>,
 }
 
@@ -259,12 +257,10 @@ impl ServerAuthConfig {
         let url = env::var("NEBU_AUTH_URL").ok();
 
         Self {
-            internal: true,
             url,
         }
     }
 }
-
 
 /// Configuration for a Nebulous server.
 impl ServerConfig {

@@ -1,4 +1,3 @@
-// src/entities/containers.rs
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -12,11 +11,13 @@ use crate::resources::v1::containers::models::{
 };
 use crate::resources::v1::volumes::models::V1VolumePath;
 
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "containers")]
 pub struct Model {
     #[sea_orm(primary_key, column_type = "Text", auto_increment = false)]
     pub id: String,
+    pub version: i32,
     pub namespace: String,
     pub name: String,
     #[sea_orm(unique, column_type = "Text")]
@@ -169,57 +170,4 @@ impl Model {
         }
     }
 
-    /// Construct a full V1Container from the current model row.
-    /// Returns a serde_json Error if any JSON parsing in subfields fails.
-    pub fn to_v1_container(&self) -> Result<V1Container, serde_json::Error> {
-        let env = self.parse_env()?;
-        let volumes = self.parse_volumes()?;
-        let status = self.parse_status()?;
-        let labels = self.parse_labels()?;
-        let meters = self.parse_meters()?;
-        let resources = self.parse_resources()?;
-        let ssh_keys = self.parse_ssh_keys()?;
-        let ports = self.parse_ports()?;
-        let authz = self.parse_authz()?;
-        let health_check = self.parse_health_check()?;
-
-        // Build metadata; fill with defaults or unwrap as needed
-        let metadata = crate::models::V1ResourceMeta {
-            name: self.name.clone(),
-            namespace: self.namespace.clone(),
-            id: self.id.clone(),
-            owner: self.owner.clone(),
-            owner_ref: self.owner_ref.clone(),
-            created_at: self.created_at.timestamp(),
-            updated_at: self.updated_at.timestamp(),
-            created_by: self.created_by.clone().unwrap_or_default(),
-            labels,
-        };
-
-        // Construct final V1Container
-        let container = V1Container {
-            kind: "Container".to_owned(), // or use default_container_kind() if needed
-            platform: self.platform.clone().unwrap_or_default(),
-            metadata,
-            image: self.image.clone(),
-            env,
-            command: self.command.clone(),
-            args: self.args.clone(),
-            volumes,
-            accelerators: self.accelerators.clone(),
-            meters,
-            restart: self.restart.clone(),
-            queue: self.queue.clone(),
-            timeout: self.timeout.clone(),
-            status,
-            resources,
-            health_check,
-            ssh_keys,
-            ports: ports.clone(),
-            proxy_port: self.proxy_port.clone(),
-            authz,
-        };
-
-        Ok(container)
-    }
 }

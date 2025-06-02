@@ -5,3 +5,4 @@ pub mod processors;
 pub mod secrets;
 pub mod services;
 pub mod volumes;
+pub(crate) mod platforms;

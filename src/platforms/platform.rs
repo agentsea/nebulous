@@ -1,4 +1,5 @@
-use crate::resources::v1::containers::models::ContainerModelVersion;
+use crate::resources::containers::ContainerModelVersion;
+use crate::resources::platforms::PlatformModelVersion;
 use async_trait::async_trait;
 
 pub enum ContainerPlatformStatus {
@@ -9,16 +10,23 @@ pub enum ContainerPlatformStatus {
     Terminating,
 }
 
-#[async_trait]
-pub trait ContainerPlatform<V: ContainerModelVersion> {
+
+pub trait ContainerPlatformBuilder<V: PlatformModelVersion> {
+
     fn validate(spec: &V::ContainerPlatform) -> anyhow::Result<()> {
         let _ = Self::from_spec(spec.clone());
         Ok(())
     }
+
     fn from_spec(spec: V::ContainerPlatform) -> Self;
-    async fn create(&self, container: V::Container) -> anyhow::Result<V::Container>;
-    async fn get(&self, id: &str) -> anyhow::Result<V::Container>;
-    async fn delete(&self, id: &str) -> anyhow::Result<V::Container>;
+}
+
+
+#[async_trait]
+pub trait ContainerPlatform<C: ContainerModelVersion> {
+    async fn create(&self, container: C::Container) -> anyhow::Result<C::Container>;
+    async fn get(&self, id: &str) -> anyhow::Result<C::Container>;
+    async fn delete(&self, id: &str) -> anyhow::Result<C::Container>;
     async fn logs(&self, id: &str) -> anyhow::Result<String>;
 
     // TODO: Design API
@@ -29,7 +37,7 @@ pub trait ContainerPlatform<V: ContainerModelVersion> {
 }
 
 #[async_trait]
-pub trait PlatformConnection<V: ContainerModelVersion> {
+pub trait PlatformConnection<V: PlatformModelVersion> {
     fn validate(spec: &V::ContainerPlatform) -> anyhow::Result<()> {
         let _ = Self::from_spec(spec.clone());
         Ok(())

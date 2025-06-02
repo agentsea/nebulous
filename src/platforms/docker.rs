@@ -1,10 +1,12 @@
 use super::local::LocalShell;
 use super::platform::{
-    ContainerPlatform, ContainerPlatformStatus, PlatformConnection, ShellConnection,
+    ContainerPlatform, ContainerPlatformBuilder, ContainerPlatformStatus, PlatformConnection,
+    ShellConnection,
 };
 use crate::resources::v1::containers::models::v1::V1Container;
 use crate::resources::v1::containers::models::ContainerModelVersion;
 use crate::resources::v1::containers::platforms::ssh::SSHConnection;
+use async_trait::async_trait;
 use serde::Deserialize;
 
 pub struct DockerPlatform<C, V>
@@ -130,11 +132,10 @@ impl ToDockerContainer for DockerInspect {
     }
 }
 
-impl<C, V> ContainerPlatform<V> for DockerPlatform<C, V>
+impl<C, V> ContainerPlatformBuilder<V> for DockerPlatform<C, V>
 where
     C: PlatformConnection<V> + ShellConnection,
     V: ContainerModelVersion,
-    V::Container: FromDockerContainer + ToDockerContainer,
 {
     fn from_spec(spec: V::ContainerPlatform) -> Self {
         let connection = C::from_spec(spec);
@@ -143,6 +144,15 @@ where
             version: std::marker::PhantomData,
         }
     }
+}
+
+#[async_trait]
+impl<C, V> ContainerPlatform<V> for DockerPlatform<C, V>
+where
+    C: PlatformConnection<V> + ShellConnection,
+    V: ContainerModelVersion,
+    V::Container: FromDockerContainer + ToDockerContainer,
+{
     async fn create(&self, container: V::Container) -> anyhow::Result<V::Container> {
         let docker_container = container.to_docker();
         let command = format!("docker run -d {}", docker_container.image);

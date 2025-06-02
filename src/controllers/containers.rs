@@ -1,11 +1,15 @@
-use super::super::platforms::factory::create_platform_from_kind;
-use crate::resources::v1::containers::models::v1::V1Container;
-use crate::resources::v1::containers::models::ContainerModelVersion;
-use crate::resources::v1::containers::platforms::platform::ContainerPlatform;
+use crate::platforms::factory::create_platform_from_kind;
+use crate::resources::v1::containers::models::V1Container;
+use crate::resources::containers::ContainerModelVersion;
+use crate::resources::v1::platforms::models::V1ContainerPlatform;
 use crate::state::AppState;
 use anyhow::{anyhow, Context};
 use std::sync::Arc;
 use tracing::{error, info, span, Instrument, Level};
+use sea_orm::ActiveModelTrait;
+use sea_orm::EntityTrait;
+use crate::entities::containers::entity::Entity;
+
 
 pub struct ContainerController<V>
 where
@@ -79,7 +83,7 @@ where
 
         async {
             info!("Starting reconciliation process");
-            let paginator = V::Container::find()
+            let paginator = entities::containers::Entity::find()
                 .paginate(&self.app_state.db_pool, 100)
                 .await?;
             let total_pages = paginator.num_pages().await?;
@@ -96,8 +100,8 @@ where
         .await;
     }
 
-    pub async fn handle(&self, mut container: V::Container) {
-        let container_status: ContainerStatus = call();
+    pub async fn handle(&self, mut container: V::Container) -> anyhow::Result<()> {
+        let container_status: ContainerStatus = ContainerStatus::Scheduled;
 
         match container_status {
             ContainerStatus::Pending | ContainerStatus::Scheduled => {
@@ -114,12 +118,13 @@ where
             }
             ContainerStatus::Finished | ContainerStatus::Failed => {}
         }
+
+        Ok(())
     }
 
     /// Schedules a container to run on a suitable platform.
     pub async fn schedule(&self, container: V::Container) -> anyhow::Result<V::Container> {
-        let container_spec = container.to_controller();
-        let platform_spec = self.find_platform(container_spec.clone()).await?;
+        let platform_spec = self.find_platform(container.clone()).await?;
         let platform: Box<dyn ContainerPlatform<V>> =
             create_platform_from_kind(platform_spec).await?;
         // TODO: Determine if the platform can take the container right now
@@ -131,29 +136,30 @@ where
 
     async fn find_platform(
         &self,
-        container: ControllerContainer,
+        container: V::Container,
     ) -> anyhow::Result<V::ContainerPlatform> {
-        match container.platform {
+        let container_spec = container.to_controller();
+        match container_spec.platform {
             Some(platform) => self.get_platform(platform).await.with_context(|| {
                 format!(
                     "Did not find platform {} requested by container {}.",
-                    platform, container.id
+                    platform, container_spec.id
                 )
             })?,
             None => {
                 // TODO: Look for a platform this container could run on
                 error!(
                     "No platform specified for container {}. We cannot handle this case yet.",
-                    container.id
+                    container_spec.id
                 );
-                anyhow::bail!("No platform specified for container {}", container.id);
+                anyhow::bail!("No platform specified for container {}", container_spec.id);
             }
         }
     }
 
     async fn get_platform(&self, platform: String) -> anyhow::Result<V::ContainerPlatform> {
         V::ContainerPlatform::find()
-            .filter(platform.eq(platform.clone()))
+            .filter(platform.eq(&platform.clone()))
             .first(&self.app_state.db_pool)
             .await?
     }
