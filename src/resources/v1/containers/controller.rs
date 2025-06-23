@@ -20,7 +20,7 @@ struct ReconcilerData {
 }
 
 /// A global map from some container "thread_id" -> the running JoinHandle.
-/// We’ll store the `thread_id` in DB and look it up here to see if it’s finished.
+/// We'll store the `thread_id` in DB and look it up here to see if it's finished.
 static CONTAINER_RECON_TASKS: Lazy<DashMap<String, JoinHandle<()>>> = Lazy::new(DashMap::new);
 
 pub struct ContainerController {
@@ -33,7 +33,7 @@ impl ContainerController {
     }
 
     /// The main loop that spawns or skips reconciliation tasks (threads).
-    /// Each container’s `controller_data` field will hold the JSON specifying its `thread_id`.
+    /// Each container's `controller_data` field will hold the JSON specifying its `thread_id`.
     pub async fn reconcile(&self) {
         info!("[Container Controller] Starting container reconciliation process");
 
@@ -139,7 +139,8 @@ impl ContainerController {
                             let platform =
                                 crate::resources::v1::containers::factory::platform_factory(
                                     platform_name,
-                                );
+                                )
+                                .await;
                             let _ = platform.reconcile(&container_clone, &db_pool).await;
                             debug!(
                                 "[DEBUG:controller.rs:spawn] Returned from platform.reconcile for container {}",

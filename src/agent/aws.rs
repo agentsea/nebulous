@@ -1,7 +1,7 @@
 use anyhow::Result;
-use aws_config::{self, BehaviorVersion, Region, SdkConfig};
+use aws_config::{self, BehaviorVersion, Region};
 use aws_sdk_iam::Client as IamClient;
-use aws_sdk_s3::config::{Credentials, Region as S3Region};
+use aws_sdk_s3::config::Credentials;
 use aws_sdk_s3::Client as S3Client;
 use aws_sdk_sts::primitives::DateTime;
 use aws_sdk_sts::Client as StsClient;
@@ -129,17 +129,15 @@ pub async fn create_s3_scoped_user(
     // Create the IAM user
     match env::var("AWS_NEBU_USER_BOUNDARY") {
         Ok(boundary_arn) => {
-            client.create_user()
+            client
+                .create_user()
                 .user_name(&username)
                 .permissions_boundary(&boundary_arn)
                 .send()
                 .await?;
         }
         Err(_) => {
-            client.create_user()
-                .user_name(&username)
-                .send()
-                .await?;
+            client.create_user().user_name(&username).send().await?;
         }
     }
 
@@ -180,7 +178,8 @@ pub async fn create_s3_scoped_user(
 
     // Create the policy
     let policy_name = format!("s3-scope-{}-{}", namespace, name);
-    client.put_user_policy()
+    client
+        .put_user_policy()
         .user_name(&username)
         .policy_name(&policy_name)
         .policy_document(to_string(&policy_document)?)

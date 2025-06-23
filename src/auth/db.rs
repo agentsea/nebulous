@@ -1,9 +1,9 @@
-use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::DerivePrimaryKey;
+use sea_orm::*;
 use sea_orm::{ActiveModelBehavior, DeriveEntityModel, DeriveRelation, EnumIter, PrimaryKeyTrait};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "api-keys")]
+#[sea_orm(table_name = "api_keys")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,

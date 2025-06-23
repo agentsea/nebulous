@@ -1,6 +1,5 @@
 use crate::agent::aws::{
     create_s3_scoped_user, delete_s3_scoped_user, generate_temporary_s3_credentials,
-    IamCredentials, StsCredentials,
 };
 use crate::agent::ns::auth_ns;
 use crate::config::CONFIG;
@@ -8,6 +7,7 @@ use crate::models::{V1ResourceMeta, V1UserProfile};
 use crate::state::AppState;
 use aws_config::{self, BehaviorVersion, Region};
 use aws_sdk_iam::Client as IamClient;
+use aws_sdk_sts::Client as StsClient;
 use axum::{
     extract::{Extension, Path, State},
     http::StatusCode,
@@ -16,7 +16,7 @@ use axum::{
 };
 use serde::Serialize;
 use serde_json::json;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 #[derive(Serialize)]
 pub struct V1IamCredentialsResponse {
@@ -187,12 +187,6 @@ pub async fn delete_scoped_s3_token(
     };
 
     // --- Call AWS Agent to Delete ---
-    let config = aws_config::defaults(BehaviorVersion::latest())
-        .region(Region::new("us-east-1"))
-        .load()
-        .await;
-    let client = IamClient::new(&config);
-
     match delete_s3_scoped_user(&namespace, &name).await {
         Ok(_) => {
             // Deletion successful

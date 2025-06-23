@@ -350,7 +350,8 @@ pub async fn create_container(
             .clone()
             .platform
             .unwrap_or("runpod".to_string()),
-    );
+    )
+    .await;
 
     debug!("Declaring container with namespace: {:?}", namespace);
     let container = platform
@@ -448,7 +449,7 @@ pub async fn _delete_container_by_id(
     // Check if user has permission to delete this container
     let _owner_id = container.owner.clone();
 
-    let platform = platform_factory(container.platform.unwrap().clone());
+    let platform = platform_factory(container.platform.unwrap().clone()).await;
 
     platform
         .delete(&container.id.to_string(), db_pool)
@@ -545,7 +546,7 @@ pub async fn _fetch_container_logs_by_id(
             )
         })?;
 
-    let platform = platform_factory(container.platform.unwrap().clone());
+    let platform = platform_factory(container.platform.unwrap().clone()).await;
 
     // Use the helper function to fetch logs
     let logs = platform
@@ -947,7 +948,8 @@ pub async fn patch_container(
                 .clone()
                 .platform
                 .unwrap_or("runpod".to_string()),
-        );
+        )
+        .await;
         let created = platform
             .declare(
                 &to_create,

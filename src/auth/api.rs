@@ -15,10 +15,10 @@ use uuid::Uuid;
 pub async fn get_api_key(
     db_conn: &DatabaseConnection,
     id: &str,
-) -> Result<SanitizedApiKey, Box<dyn std::error::Error>> {
+) -> Result<models::ApiKey, Box<dyn std::error::Error>> {
     let result = db::Entity::find_by_id(id).one(db_conn).await?;
     match result {
-        Some(api_key) => Ok(models::ApiKey::from(api_key).into()),
+        Some(api_key) => Ok(models::ApiKey::from(api_key)),
         None => Err("API key not found".into()),
     }
 }
@@ -72,7 +72,7 @@ pub async fn validate_api_key(
         let parts: Vec<&str> = full_key.split('.').collect();
         if parts.len() == 2 {
             let (id, key) = (parts[0], parts[1]);
-            if let Some(mut api_key) = db::Entity::find_by_id(id).one(db_conn).await? {
+            if let Some(api_key) = db::Entity::find_by_id(id).one(db_conn).await? {
                 if api_key.revoked_at.is_some() {
                     return Ok(false);
                 }
@@ -100,7 +100,7 @@ pub async fn revoke_api_key(
     db_conn: &DatabaseConnection,
     id: &str,
 ) -> Result<SanitizedApiKey, Box<dyn std::error::Error>> {
-    if let Some(mut api_key) = db::Entity::find_by_id(id).one(db_conn).await? {
+    if let Some(api_key) = db::Entity::find_by_id(id).one(db_conn).await? {
         let mut current_api_key: db::ActiveModel = api_key.into();
         current_api_key.revoked_at = Set(Some(chrono::Utc::now()));
         current_api_key.hash = Set(String::new());

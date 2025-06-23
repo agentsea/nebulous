@@ -1,8 +1,10 @@
 use crate::entities::containers;
 use crate::models::V1UserProfile;
 use crate::resources::v1::containers::base::ContainerPlatform;
+use crate::resources::v1::containers::ec2::Ec2Platform;
 use crate::resources::v1::containers::kube::KubePlatform;
 use crate::resources::v1::containers::models::{V1Container, V1ContainerRequest};
+use crate::resources::v1::containers::nebius::NebiusPlatform;
 use crate::resources::v1::containers::runpod::RunpodPlatform;
 use sea_orm::DatabaseConnection;
 use std::error::Error;
@@ -11,6 +13,8 @@ use std::error::Error;
 pub enum PlatformType {
     Runpod(RunpodPlatform),
     Kube(KubePlatform),
+    Ec2(Ec2Platform),
+    Nebius(NebiusPlatform),
 }
 
 // Implement methods on the enum that delegate to the contained platform
@@ -36,6 +40,16 @@ impl PlatformType {
                     .declare(request, db, user_profile, owner_id, namespace, api_key)
                     .await
             }
+            PlatformType::Ec2(platform) => {
+                platform
+                    .declare(request, db, user_profile, owner_id, namespace, api_key)
+                    .await
+            }
+            PlatformType::Nebius(platform) => {
+                platform
+                    .declare(request, db, user_profile, owner_id, namespace, api_key)
+                    .await
+            }
         }
     }
 
@@ -47,6 +61,8 @@ impl PlatformType {
         match self {
             PlatformType::Runpod(platform) => platform.reconcile(container, db).await,
             PlatformType::Kube(platform) => platform.reconcile(container, db).await,
+            PlatformType::Ec2(platform) => platform.reconcile(container, db).await,
+            PlatformType::Nebius(platform) => platform.reconcile(container, db).await,
         }
     }
 
@@ -58,6 +74,8 @@ impl PlatformType {
         match self {
             PlatformType::Runpod(platform) => platform.logs(container_id, db).await,
             PlatformType::Kube(platform) => platform.logs(container_id, db).await,
+            PlatformType::Ec2(platform) => platform.logs(container_id, db).await,
+            PlatformType::Nebius(platform) => platform.logs(container_id, db).await,
         }
     }
 
@@ -70,6 +88,8 @@ impl PlatformType {
         match self {
             PlatformType::Runpod(platform) => platform.exec(container_id, command, db).await,
             PlatformType::Kube(platform) => platform.exec(container_id, command, db).await,
+            PlatformType::Ec2(platform) => platform.exec(container_id, command, db).await,
+            PlatformType::Nebius(platform) => platform.exec(container_id, command, db).await,
         }
     }
 
@@ -81,6 +101,8 @@ impl PlatformType {
         match self {
             PlatformType::Runpod(platform) => platform.delete(id, db).await,
             PlatformType::Kube(platform) => platform.delete(id, db).await,
+            PlatformType::Ec2(platform) => platform.delete(id, db).await,
+            PlatformType::Nebius(platform) => platform.delete(id, db).await,
         }
     }
 
@@ -88,10 +110,12 @@ impl PlatformType {
 }
 
 // Factory function
-pub fn platform_factory(platform: String) -> PlatformType {
+pub async fn platform_factory(platform: String) -> PlatformType {
     match platform.as_str() {
         "runpod" => PlatformType::Runpod(RunpodPlatform::new()),
         "kube" => PlatformType::Kube(KubePlatform::new()),
+        "ec2" => PlatformType::Ec2(Ec2Platform::new().await),
+        "nebius" => PlatformType::Nebius(NebiusPlatform::new().await),
         _ => panic!("Invalid platform"),
     }
 }

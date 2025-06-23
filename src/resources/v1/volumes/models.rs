@@ -33,7 +33,7 @@ pub struct V1VolumePath {
 }
 
 fn default_volume_driver() -> V1VolumeDriver {
-    V1VolumeDriver::RCLONE_SYNC
+    V1VolumeDriver::RcloneSync
 }
 
 fn default_continuous() -> bool {
@@ -56,28 +56,19 @@ pub struct V1VolumeConfig {
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 pub enum V1VolumeDriver {
     #[default]
-    RCLONE_SYNC,
-    RCLONE_COPY,
-    RCLONE_BISYNC,
-    RCLONE_MOUNT,
-}
-
-impl std::str::FromStr for V1VolumeDriver {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "RCLONE_BISYNC" => Ok(V1VolumeDriver::RCLONE_BISYNC),
-            "RCLONE_SYNC" => Ok(V1VolumeDriver::RCLONE_SYNC),
-            "RCLONE_COPY" => Ok(V1VolumeDriver::RCLONE_COPY),
-            "RCLONE_MOUNT" => Ok(V1VolumeDriver::RCLONE_MOUNT),
-            _ => Err("Unrecognized VolumeType"),
-        }
-    }
+    RcloneSync,
+    RcloneCopy,
+    RcloneBisync,
+    RcloneMount,
 }
 
 impl fmt::Display for V1VolumeDriver {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        match self {
+            V1VolumeDriver::RcloneSync => write!(f, "rclone-sync"),
+            V1VolumeDriver::RcloneCopy => write!(f, "rclone-copy"),
+            V1VolumeDriver::RcloneBisync => write!(f, "rclone-bisync"),
+            V1VolumeDriver::RcloneMount => write!(f, "rclone-mount"),
+        }
     }
 }

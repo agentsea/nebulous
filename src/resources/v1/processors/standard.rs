@@ -385,7 +385,7 @@ impl StandardProcessor {
         // 1. Get expected owner_ref and platform
         let owner_ref_string = format!("{}.{}.Processor", processor.name, processor.namespace);
         // TODO: This assumes Runpod - ideally, determine platform dynamically if needed
-        let platform = platform_factory("runpod".to_string()); // Assuming RunpodPlatform
+        let platform = platform_factory("runpod".to_string()).await; // Assuming RunpodPlatform
 
         // Cast to RunpodPlatform to access runpod_client - This is a bit hacky, assumes watch is only for runpod
         // A better approach might involve adding list_pods to ContainerPlatform trait or specific logic
@@ -886,7 +886,7 @@ impl StandardProcessor {
 
         // Get the appropriate platform for this container
         let platform_str = container.platform.clone().unwrap_or("runpod".to_string());
-        let platform = platform_factory(platform_str);
+        let platform = platform_factory(platform_str).await;
 
         if new_replica_count > current_replicas {
             // Create containers for the difference between current and new count
@@ -1457,7 +1457,7 @@ impl ProcessorPlatform for StandardProcessor {
             let platform_str = container.platform.clone().unwrap_or("runpod".to_string());
             // fallback to "runpod" or whichever makes sense
             debug!("Platform string: {}", platform_str);
-            let platform = platform_factory(platform_str);
+            let platform = platform_factory(platform_str).await;
             match platform.delete(&container.id, db).await {
                 Ok(_) => info!(
                     "Successfully deleted container {} from platform",

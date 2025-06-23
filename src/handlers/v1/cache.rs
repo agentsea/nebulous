@@ -9,6 +9,7 @@ use axum::{
 };
 use futures::stream::{self, StreamExt};
 use redis::AsyncCommands;
+use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashSet;

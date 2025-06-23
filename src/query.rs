@@ -431,6 +431,17 @@ impl Query {
             .await
     }
 
+    /// Finds containers by their resource_name (e.g., EC2 instance ID).
+    pub async fn find_containers_by_resource_name(
+        db: &DatabaseConnection,
+        resource_name: &str,
+    ) -> Result<Vec<containers::Model>, DbErr> {
+        containers::Entity::find()
+            .filter(containers::Column::ResourceName.eq(resource_name))
+            .all(db)
+            .await
+    }
+
     /// Find a volume by namespace, name, and owners
     pub async fn find_volume_by_namespace_name_and_owners(
         db: &DatabaseConnection,
