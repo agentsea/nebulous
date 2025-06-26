@@ -155,6 +155,11 @@ data:
 | redis.auth | object | `{"database":0,"host":"","password":"nebulous","port":6379}` | Manual configuration of the Redis connection. Except for 'host', this information is also used if 'create' is true. |
 | redis.create | bool | `false` | If enabled, create a Redis deployment and service. Not recommended for production. |
 | redis.imageTag | string | `"8"` | The redis image tag. Ignored unless 'create' is true. |
+| redis.persistence.claimName | string | `"redis-pvc"` | The name of the PersistentVolumeClaim for the Redis data. |
+| redis.persistence.create | bool | `true` | If true, create a PersistentVolumeClaim for the Redis data. |
+| redis.persistence.enabled | bool | `false` | If enabled, persist the Redis data. |
+| redis.persistence.size | string | `"10Gi"` | The size of the PersistentVolumeClaim for the Redis data. |
+| redis.persistence.storageClassName | string | `""` | The storage class of the PersistentVolumeClaim for the Redis data. |
 | redis.resources | object | `{}` | The resource requests and limits for the Redis container. |
 | redis.secret.keys.connectionString | string | `"CONNECTION_STRING"` | The key in the secret containing the Redis connection string. |
 | redis.secret.keys.password | string | `"PASSWORD"` | The key in the secret containing the Redis password. |

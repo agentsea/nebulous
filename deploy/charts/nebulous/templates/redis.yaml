@@ -60,6 +60,23 @@ roleRef:
   name: tailscale-redis
   apiGroup: rbac.authorization.k8s.io
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "redis.name" . }}
+  namespace: {{ include "nebulous.namespace" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/instance: {{ include "redis.name" . }}
+    app.kubernetes.io/component: cache
+data:
+  redis.conf: |
+    save 60 1
+    appendonly yes
+    appendfsync everysec
+    dir /data
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -87,15 +104,22 @@ spec:
         app: {{ include "redis.name" . }}
     spec:
       serviceAccountName: {{ .Values.redis.serviceAccountName }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{ include "redis.name" . }}
+        {{- if .Values.redis.persistence.enabled }}
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.redis.persistence.claimName }}
+        {{- end }}
       containers:
         - name: redis
           image: "redis:{{ .Values.redis.imageTag }}"
-          command:
-            - /bin/sh
-            - -c
           args:
-            - |
-              exec redis-server --requirepass "$REDIS_PASSWORD"
+            - "/config/redis.conf"
+            - "--requirepass"
+            - "$REDIS_PASSWORD"
           env:
             - name: REDIS_PASSWORD
               valueFrom:
@@ -104,6 +128,13 @@ spec:
                   key: {{ .Values.redis.secret.keys.password }}
           ports:
             - containerPort: 6379
+          volumeMounts:
+            - mountPath: "/config"
+              name: redis-config
+          {{- if .Values.redis.persistence.enabled}}
+            - mountPath: "/data"
+              name: redis-data
+          {{- end }}
           {{- with .Values.redis.resources }}
           resources:
           {{- toYaml . | nindent 12 }}
@@ -143,6 +174,25 @@ spec:
           {{- toYaml . | nindent 12 }}
           {{- end }}
 ---
+{{- if and .Values.redis.persistence.enabled .Values.redis.persistence.create }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.redis.persistence.claimName }}
+  namespace: {{ include "nebulous.namespace" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.redis.persistence.storageClassName }}
+  storageClassName: {{.}}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.redis.persistence.size }}
+---
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
