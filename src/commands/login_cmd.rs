@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::io::{self, Write};
 
-use nebulous::config::{GlobalConfig, ServerConfig};
+use nebulous::config::{ClientConfig, ClientServerConfig};
 use open;
 use rpassword;
 
@@ -17,7 +17,7 @@ pub async fn execute(
 
     let nebu_url = nebu_url.trim().trim_end_matches("/").to_string();
 
-    let mut config = GlobalConfig::read()?;
+    let mut client_config = ClientConfig::read()?;
 
     if auth.is_some() && hub.is_some() {
         let auth_url = auth.unwrap().trim().trim_end_matches("/").to_string();
@@ -35,13 +35,13 @@ pub async fn execute(
         io::stdout().flush()?;
         let api_key = rpassword::read_password()?;
 
-        config.servers.push(ServerConfig {
-            name: Some("cloud".to_string()),
+        client_config.servers.push(ClientServerConfig {
+            name: "cloud".to_string(),
             server: Some(nebu_url),
             api_key: Some(api_key),
             auth_server: Some(auth_url),
         });
-        config.current_server = Some("cloud".to_string());
+        client_config.current_server = Some("cloud".to_string());
     } else {
         println!(
             r#"Configuring the Nebulous CLI to use the integrated auth server.
@@ -63,15 +63,15 @@ When you're running nebulous on Kubernetes, use:
         io::stdout().flush()?;
         let api_key = rpassword::read_password()?;
 
-        config.servers.push(ServerConfig {
-            name: Some("nebu".to_string()),
+        client_config.servers.push(ClientServerConfig {
+            name: "nebu".to_string(),
             server: Some(nebu_url),
             api_key: Some(api_key),
             auth_server: None,
         });
-        config.current_server = Some("nebu".to_string());
+        client_config.current_server = Some("nebu".to_string());
     }
-    config.write()?;
+    client_config.write()?;
 
     // TODO: Check that we can actually reach and authenticate with the server
 

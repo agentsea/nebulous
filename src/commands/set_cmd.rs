@@ -1,16 +1,16 @@
 use colored::Colorize;
-use nebulous::config::GlobalConfig;
+use nebulous::config::ClientConfig;
 use std::error::Error;
 
 pub async fn set_context(server_name: &str) -> Result<(), Box<dyn Error>> {
     // Read the current config
-    let mut config = GlobalConfig::read()?;
+    let mut config = ClientConfig::read()?;
 
     // Check if the server exists
     let server_exists = config
         .servers
         .iter()
-        .any(|s| s.name.as_deref() == Some(server_name));
+        .any(|s| s.name == server_name);
 
     if !server_exists {
         return Err(format!("Server '{}' not found in configuration", server_name).into());

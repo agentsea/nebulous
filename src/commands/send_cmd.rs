@@ -1,4 +1,4 @@
-use nebulous::config::GlobalConfig;
+use nebulous::config::ClientConfig;
 use nebulous::models::V1StreamData;
 use serde_json::Value;
 use std::error::Error;
@@ -7,7 +7,7 @@ use std::io::{self, Read};
 use tracing::debug;
 
 pub async fn send_messages(args: &crate::cli::SendMessageCommands) -> Result<(), Box<dyn Error>> {
-    let config = GlobalConfig::read()?;
+    let config = ClientConfig::read()?;
     debug!("Config: {:?}", config);
     let current_server = config.get_current_server_config().unwrap(); // Handle error more gracefully
     let server = current_server.server.as_ref().unwrap(); // Handle error

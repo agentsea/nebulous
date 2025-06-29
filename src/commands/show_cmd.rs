@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
-use nebulous::config::GlobalConfig;
+use nebulous::config::ClientConfig;
 use std::error::Error;
 
 pub async fn show_config() -> Result<(), Box<dyn Error>> {
-    let config = GlobalConfig::read()?;
+    let config = ClientConfig::read()?;
 
     println!("{}", "Global Configuration:".bold().underline());
 
@@ -23,7 +23,7 @@ pub async fn show_config() -> Result<(), Box<dyn Error>> {
             let is_current = config
                 .current_server
                 .as_ref()
-                .and_then(|current| server.name.as_ref().map(|name| current == name))
+                .map(|current| current == &server.name)
                 .unwrap_or(false);
 
             let prefix = if is_current {
@@ -32,11 +32,7 @@ pub async fn show_config() -> Result<(), Box<dyn Error>> {
                 "  ".normal()
             };
 
-            if let Some(name) = &server.name {
-                println!("{}{}", prefix, name.bold());
-            } else {
-                println!("{}{}", prefix, format!("Server #{}", idx + 1).bold());
-            }
+            println!("{}{}", prefix, server.name.bold());
 
             if let Some(api_key) = &server.api_key {
                 let hidden_key = format!(

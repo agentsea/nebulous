@@ -30,14 +30,14 @@ pub mod utils;
 pub mod validate;
 pub mod volumes;
 
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::handlers::v1::namespaces::ensure_namespace;
 use crate::handlers::v1::volumes::ensure_volume;
 use axum::Router;
 use db::init_db;
 use rdkafka::admin::AdminClient;
 use rdkafka::producer::FutureProducer;
-use rdkafka::ClientConfig;
+use rdkafka::ClientConfig as KafkaClientConfig;
 use routes::create_routes;
 use sea_orm::DatabaseConnection;
 use state::AppState;
@@ -55,48 +55,25 @@ pub async fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> 
     println!("Database pool created");
 
     // Initialize the appropriate message queue based on configuration
-    let message_queue = match CONFIG.message_queue_type.to_lowercase().as_str() {
+    let message_queue = match SERVER_CONFIG.message_queue_type.to_lowercase().as_str() {
         "redis" => {
-            let redis_url = match &CONFIG.redis_url {
-                Some(url) if !url.is_empty() => {
-                    // Redis URL exists, so use it directly but also parse it to set env vars
-                    if let Ok(parsed_url) = Url::parse(url) {
-                        // Extract and set host
-                        if let Some(host) = parsed_url.host_str() {
-                            env::set_var("REDIS_HOST", host);
-                        }
+            let redis_url = SERVER_CONFIG.redis.get_url();
 
-                        // Extract and set port
-                        if let Some(port) = parsed_url.port() {
-                            env::set_var("REDIS_PORT", port.to_string());
-                        } else {
-                            // Default redis port if not specified in URL
-                            env::set_var("REDIS_PORT", "6379");
-                        }
+            if let Ok(parsed_url) = Url::parse(redis_url.as_str()) {
 
-                        // Extract and set password if present
-                        if let Some(password) = parsed_url.password() {
-                            env::set_var("REDIS_PASSWORD", password);
-                        }
-                    }
-
-                    url.clone()
+                if let Some(host) = parsed_url.host_str() {
+                    env::set_var("REDIS_HOST", host);
                 }
-                _ => {
-                    // Redis URL not present or empty, build from components
-                    let host = &CONFIG.redis_host;
-                    let port = &CONFIG.redis_port;
 
-                    match &CONFIG.redis_password {
-                        Some(password) if !password.is_empty() => {
-                            format!("redis://:{}@{}:{}", password, host, port)
-                        }
-                        _ => format!("redis://{}:{}", host, port),
-                    }
+                if let Some(port) = parsed_url.port() {
+                    env::set_var("REDIS_PORT", port.to_string());
                 }
+
+                if let Some(password) = parsed_url.password() {
+                    env::set_var("REDIS_PASSWORD", password);
+                }
+
             };
-
-            // Create the Redis client using the constructed URL
             let redis_client = Arc::new(redis::Client::open(redis_url.as_str())?);
 
             MessageQueue::Redis {
@@ -104,10 +81,10 @@ pub async fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> 
             }
         }
         "kafka" => {
-            let mut client_config = ClientConfig::new();
-            let kafka_config = client_config
-                .set("bootstrap.servers", &CONFIG.kafka_bootstrap_servers)
-                .set("message.timeout.ms", &CONFIG.kafka_timeout_ms);
+            let mut kafka_client_config = KafkaClientConfig::new();
+            let kafka_config = kafka_client_config
+                .set("bootstrap.servers", &SERVER_CONFIG.kafka.bootstrap_servers)
+                .set("message.timeout.ms", &SERVER_CONFIG.kafka.timeout_ms.to_string());
 
             let producer = Arc::new(kafka_config.clone().create::<FutureProducer>()?);
             let admin = Arc::new(kafka_config.create::<AdminClient<_>>()?);
@@ -153,8 +130,8 @@ pub async fn ensure_base_resources(
     match ensure_namespace(
         db_pool,
         "root",
-        &CONFIG.root_owner,
-        &CONFIG.root_owner,
+        &SERVER_CONFIG.root_owner,
+        &SERVER_CONFIG.root_owner,
         None,
     )
     .await
@@ -167,8 +144,8 @@ pub async fn ensure_base_resources(
         db_pool,
         "root",
         "root",
-        &CONFIG.root_owner,
-        format!("s3://{}", &CONFIG.bucket_name).as_str(),
+        &SERVER_CONFIG.root_owner,
+        format!("s3://{}", &SERVER_CONFIG.bucket_name).as_str(),
         "root",
         None,
     )

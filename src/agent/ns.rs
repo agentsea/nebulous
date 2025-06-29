@@ -1,4 +1,4 @@
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::entities::namespaces;
 use anyhow::Result;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
@@ -25,7 +25,7 @@ pub async fn auth_ns(
 
     if namespace == "root" {
         debug!("Namespace is root");
-        let root_owner = CONFIG.root_owner.clone();
+        let root_owner = SERVER_CONFIG.root_owner.clone();
         if !owner_ids.contains(&root_owner) {
             error!("User not authorized to access root namespace");
             return Err(anyhow::anyhow!("User not authorized to access namespace"));

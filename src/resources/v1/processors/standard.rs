@@ -1,5 +1,5 @@
 use crate::agent::agent::create_agent_key;
-use crate::config::CONFIG;
+use crate::config::{ClientConfig, SERVER_CONFIG};
 use crate::entities::containers;
 use crate::entities::processors;
 use crate::models::V1CreateAgentKeyRequest;
@@ -154,17 +154,12 @@ impl StandardProcessor {
                 );
                 // Fallback to existing config if Tailscale lookup fails
                 // This maintains previous behavior in case of Tailscale issues.
-                match CONFIG.redis_publish_url.clone() {
+                match SERVER_CONFIG.redis.publish_url.clone() {
                     Some(url) => {
                         debug!("Using REDIS_PUBLISH_URL: {}", url);
                         url
                     }
-                    None => CONFIG.redis_url.clone().ok_or_else(|| {
-                        Box::new(std::io::Error::new(
-                            std::io::ErrorKind::NotFound,
-                            "REDIS_URL or REDIS_PUBLISH_URL must be set if Tailscale lookup fails",
-                        ))
-                    })?,
+                    None => SERVER_CONFIG.redis.get_url()
                 }
             }
         };
@@ -1087,11 +1082,13 @@ impl ProcessorPlatform for StandardProcessor {
 
         // Assume a function exists to create the key using user profile
         // We need the auth server URL, user token, desired agent ID, name, and duration.
-        let config = crate::config::GlobalConfig::read()
+        let client_config = ClientConfig::read()
             .map_err(|e| format!("Failed to read global config: {}", e))?;
-        let auth_server = config
-            .get_auth_server()
-            .ok_or_else(|| "Auth server URL not configured".to_string())?;
+        let auth_server = client_config
+            .get_current_server_config()
+            .and_then(|s| s.auth_server.clone())
+            .expect("Auth server URL not configured");
+
         let user_token = user_profile
             .token
             .as_ref()
@@ -1240,11 +1237,12 @@ impl ProcessorPlatform for StandardProcessor {
             .decrypt_value()
             .map_err(|e| format!("Failed to decrypt agent key: {}", e))?;
 
-        let config = crate::config::GlobalConfig::read()
+        let client_config = ClientConfig::read()
             .map_err(|e| format!("Failed to read global config: {}", e))?;
-        let auth_server = config
-            .get_auth_server()
-            .ok_or_else(|| "Auth server URL not configured".to_string())?;
+        let auth_server = client_config
+            .get_current_server_config()
+            .and_then(|s| s.auth_server.clone())
+            .expect("Auth server URL not configured");
 
         debug!(
             "Fetching user profile using processor agent key from {}",
