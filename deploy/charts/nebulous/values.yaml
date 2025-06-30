@@ -243,14 +243,18 @@ redis:
   persistence:
     # -- If enabled, persist the Redis data.
     enabled: false
-    # -- If true, create a PersistentVolumeClaim for the Redis data.
-    create: true
-    # -- The name of the PersistentVolumeClaim for the Redis data.
-    claimName: "redis-pvc"
-    # -- The size of the PersistentVolumeClaim for the Redis data.
-    size: "10Gi"
-    # -- The storage class of the PersistentVolumeClaim for the Redis data.
-    storageClassName: ""
+
+    data:
+      # -- The size of the PVC for the Redis data,
+      size: "5Gi"
+      # -- The storage class of the PersistentVolumeClaim for the Redis data.
+      storageClassName: ""
+
+    acl:
+      # -- The size of the PVC for the Redis ACL file.
+      size: "64Mi"
+      # -- The storage class of the PersistentVolumeClaim for the Redis ACL file.
+      storageClassName: ""
 
 ## Headscale configuration
 headscale:
