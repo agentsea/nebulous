@@ -116,7 +116,7 @@ spec:
         {{- end }}
       initContainers:
         - name: ensure-acl
-          image: "redis:8"
+          image: "redis:${{ .Values.redis.imageTag }}"
           command:
             - "/bin/bash"
             - "-c"
@@ -149,7 +149,7 @@ spec:
               name: redis-users
       containers:
         - name: redis
-          image: "redis:8"
+          image: "redis:{{ .Values.redis.imageTag }}"
           args:
             - "/mnt/config/redis.conf"
           ports:
@@ -195,33 +195,33 @@ spec:
           resources:
           {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- if .Values.redis.persistence.enabled }}
-      volumeClaimTemplates:
-        - metadata:
-            name: redis-data
-            labels:
-              {{- include "common.labels" . | nindent 14 }}
-          spec:
-            accessModes: ["ReadWriteOnce"]
-            {{- with .Values.redis.persistence.data.storageClassName }}
-            storageClassName: {{ . }}
-            {{- end }}
-            resources:
-              requests:
-                storage: {{ .Values.redis.persistence.data.size }}
-        - metadata:
-            name: redis-users
-            labels:
-              {{- include "common.labels" . | nindent 14 }}
-          spec:
-            accessModes: ["ReadWriteOnce"]
-            {{- with .Values.redis.persistence.acl.storageClassName }}
-            storageClassName: {{ . }}
-            {{- end }}
-            resources:
-              requests:
-                storage: {{ .Values.redis.persistence.acl.size }}
+  {{- if .Values.redis.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          {{- include "common.labels" . | nindent 14 }}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.redis.persistence.data.storageClassName }}
+        storageClassName: {{ . }}
         {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.redis.persistence.data.size }}
+    - metadata:
+        name: redis-users
+        labels:
+          {{- include "common.labels" . | nindent 14 }}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.redis.persistence.acl.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.redis.persistence.acl.size }}
+    {{- end }}
 ---
 apiVersion: v1
 kind: Service
