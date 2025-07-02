@@ -1,6 +1,6 @@
 # nebulous
 
-![Version: 0.2.10](https://img.shields.io/badge/Version-0.2.10-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.88](https://img.shields.io/badge/AppVersion-0.1.88-informational?style=flat-square)
+![Version: 0.2.10](https://img.shields.io/badge/Version-0.2.10-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.89](https://img.shields.io/badge/AppVersion-0.1.89-informational?style=flat-square)
 
 A cross-cloud container orchestrator for AI workloads
 

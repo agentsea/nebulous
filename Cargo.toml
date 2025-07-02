@@ -1,6 +1,6 @@
 [package]
 name = "nebulous"
-version = "0.1.88"
+version = "0.1.89"
 edition = "2021"
 description = "A globally distributed container orchestrator"
 license = "MIT"
