@@ -121,6 +121,9 @@ impl StandardProcessor {
                 ),
                 Err(e) => return Err(format!("Failed to create Redis ACL user: {}", e).into()),
             }
+
+            redis::cmd("ACL").arg("SAVE").query(&mut conn)
+                .map_err(|e| format!("Failed to save ACL changes: {}", e))?;
         }
 
         // Add Redis credentials to environment variables
