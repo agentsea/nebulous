@@ -116,7 +116,7 @@ spec:
         {{- end }}
       initContainers:
         - name: ensure-acl
-          image: "redis:${{ .Values.redis.imageTag }}"
+          image: "redis:{{ .Values.redis.imageTag }}"
           command:
             - "/bin/bash"
             - "-c"
