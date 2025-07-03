@@ -9,57 +9,37 @@ steps:
         docker buildx inspect --bootstrap
 
   - name: "gcr.io/cloud-builders/docker"
-    id: "Build Image"
+    id: "Build and Push"
     entrypoint: "bash"
     args:
       - "-c"
       - |
+        # Prepare tag list
+        TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$BRANCH_NAME"
+        
+        # Add latest tag if on main branch
+        if [ "$BRANCH_NAME" == "main" ]; then
+          TAGS="$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
+        fi
+        
+        # Add version tag if TAG_NAME exists
+        if [ -n "$TAG_NAME" ]; then
+          echo "Detected tag: $TAG_NAME. Adding version tag."
+          TAGS="$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
+        fi
+        
+        # Build and push all tags in one operation
         docker buildx build \
           --platform linux/amd64 \
-          -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA \
+          $TAGS \
           --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/server:buildcache \
           --cache-to type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/server:buildcache,mode=max \
           --push \
           .
 
-  - name: "gcr.io/cloud-builders/docker"
-    id: "Tag Branch"
-    entrypoint: "bash"
-    args:
-      - "-c"
-      - |
-        docker pull us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA
-        docker tag us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$BRANCH_NAME
-        docker push us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$BRANCH_NAME
-
-  - name: "gcr.io/cloud-builders/docker"
-    id: "Tag Latest"
-    entrypoint: "bash"
-    args:
-      - "-c"
-      - |
-        if [ "$BRANCH_NAME" == "main" ]; then
-          docker tag us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest
-          docker push us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest
-        fi
-
-  - name: "gcr.io/cloud-builders/docker"
-    id: "Tag Version"
-    entrypoint: "bash"
-    args:
-      - "-c"
-      - |
-        if [ -n "$TAG_NAME" ]; then
-          echo "Detected tag: $TAG_NAME. Tagging with version."
-          docker tag us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME
-          docker push us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME
-        else
-          echo "No TAG_NAME detected. Skipping version tag."
-        fi
-
 timeout: "1800s"
 
 options:
-  machineType: "N1_HIGHCPU_8"
+  machineType: "E2_HIGHCPU_8"
   env:
     - DOCKER_BUILDKIT=1
