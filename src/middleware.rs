@@ -1,5 +1,5 @@
 use crate::auth;
-use crate::config::CONFIG;
+use crate::config::{ClientConfig, ServerConfig, SERVER_CONFIG};
 use crate::models::V1UserProfile;
 use crate::AppState;
 use axum::{
@@ -131,15 +131,15 @@ pub async fn get_user_profile_from_internal_token(
 pub async fn get_user_profile_from_external_token(
     token: &str,
 ) -> Result<V1UserProfile, StatusCode> {
-    let config = crate::config::GlobalConfig::read().unwrap();
+    let client_config = ClientConfig::read().unwrap();
 
-    let auth_server = config.get_current_server_config().map_or_else(
-        || CONFIG.auth_server.clone(),
+    let auth_server = client_config.get_current_server_config().map_or_else(
+        || SERVER_CONFIG.auth.url.clone(),
         |server_config| {
             server_config
                 .auth_server
                 .clone()
-                .unwrap_or_else(|| CONFIG.auth_server.clone())
+                .unwrap_or_else(|| SERVER_CONFIG.auth.url.clone())
         },
     );
 

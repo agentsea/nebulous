@@ -1,5 +1,5 @@
 use crate::agent::ns::auth_ns;
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::entities::processors;
 use crate::middleware::get_user_profile_from_token;
 use crate::models::{V1ResourceMetaRequest, V1StreamData, V1StreamMessage, V1UserProfile};
@@ -853,12 +853,12 @@ pub async fn send_processor(
     }
     debug!("User token: {}", user_token);
 
-    let auth_server = CONFIG.auth_server.clone();
+    let auth_server = SERVER_CONFIG.auth.url.clone();
     if auth_server.is_empty() {
-        error!("Auth server URL is not configured or empty.");
+        error!("Auth server URL is empty.");
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Auth server configuration missing"})),
+            Json(json!({"error": "Auth server configuration is empty"})),
         ));
     }
 
@@ -2944,7 +2944,7 @@ async fn generate_agent_key_for_processor(
     processor: &crate::entities::processors::Model,
     user_token: &str,
 ) -> Result<String, String> {
-    let auth_server = CONFIG.auth_server.clone();
+    let auth_server = SERVER_CONFIG.auth.url.clone();
     if auth_server.is_empty() {
         return Err("Auth server configuration missing".to_string());
     }

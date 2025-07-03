@@ -1,6 +1,6 @@
 // src/handlers/containers.rs
 
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::entities::namespaces::{self, ActiveModel as NamespaceActiveModel};
 use crate::handlers::v1::volumes::ensure_volume;
 use crate::models::V1UserProfile;
@@ -160,7 +160,7 @@ pub async fn create_namespace(
         &namespace_entity.owner.clone(),
         &format!(
             "s3://{}/data/{}",
-            &CONFIG.bucket_name,
+            &SERVER_CONFIG.bucket_name,
             &namespace_entity.name.clone()
         ),
         &namespace_entity.created_by.clone(),
@@ -332,7 +332,7 @@ pub async fn ensure_ns_and_resources(
                     name,
                     owner,
                     owner,
-                    format!("s3://{}", &CONFIG.bucket_name).as_str(),
+                    format!("s3://{}", &SERVER_CONFIG.bucket_name).as_str(),
                     created_by,
                     labels,
                 )

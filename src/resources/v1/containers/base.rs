@@ -1,7 +1,6 @@
 use crate::agent::agent::create_agent_key;
 use crate::agent::aws::create_s3_scoped_user;
-use crate::config::GlobalConfig;
-use crate::config::CONFIG;
+use crate::config::{ClientConfig, SERVER_CONFIG};
 use crate::entities::containers;
 use crate::handlers::v1::volumes::ensure_volume;
 use crate::models::{V1CreateAgentKeyRequest, V1UserProfile};
@@ -184,7 +183,7 @@ pub trait ContainerPlatform {
         model: &containers::Model,
         db: &DatabaseConnection,
     ) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
-        let config = GlobalConfig::read().unwrap();
+        let config = ClientConfig::read().unwrap();
         let mut env = HashMap::new();
 
         debug!("Getting agent key");
@@ -196,7 +195,7 @@ pub trait ContainerPlatform {
             }
         };
 
-        let root_volume_uri = format!("s3://{}/data", CONFIG.bucket_name);
+        let root_volume_uri = format!("s3://{}/data", SERVER_CONFIG.bucket_name);
         let source = format!("{}/{}", root_volume_uri, model.namespace);
 
         debug!("Ensuring volume: {:?}", source.clone());
@@ -220,7 +219,7 @@ pub trait ContainerPlatform {
 
         debug!("Creating s3 token");
         let s3_token =
-            match create_s3_scoped_user(&CONFIG.bucket_name, &model.namespace, &model.id).await {
+            match create_s3_scoped_user(&SERVER_CONFIG.bucket_name, &model.namespace, &model.id).await {
                 Ok(token) => token,
                 Err(e) => {
                     error!("Error creating s3 token: {:?}", e);
@@ -249,7 +248,7 @@ pub trait ContainerPlatform {
         );
         env.insert(
             "RCLONE_CONFIG_S3REMOTE_REGION".to_string(),
-            CONFIG.bucket_region.clone(),
+            SERVER_CONFIG.bucket_region.clone(),
         );
         env.insert("RCLONE_S3_NO_CHECK_BUCKET".to_string(), "true".to_string());
         env.insert("NEBU_API_KEY".to_string(), agent_key.clone().unwrap());
@@ -261,11 +260,11 @@ pub trait ContainerPlatform {
         }
         env.insert(
             "AGENTSEA_AUTH_SERVER".to_string(),
-            CONFIG.auth_server.clone(),
+            SERVER_CONFIG.auth.url.clone(),
         );
         env.insert(
             "NEBULOUS_SERVER".to_string(),
-            CONFIG.publish_url.clone().unwrap(),
+            SERVER_CONFIG.publish_url.clone().unwrap(),
         );
 
         env.insert("NEBU_NAMESPACE".to_string(), model.namespace.clone());
@@ -332,9 +331,9 @@ pub trait ContainerPlatform {
     }
 
     async fn get_tailscale_client(&self) -> TailscaleClient {
-        let tailscale_api_key = CONFIG
-            .tailscale_api_key
-            .clone()
+        let tailscale_api_key = SERVER_CONFIG
+            .tailscale.as_ref()
+            .map(|ts| ts.api_key.clone())
             .expect("Tailscale API key not found in config");
         debug!("Tailscale key: {}", tailscale_api_key);
         TailscaleClient::new(tailscale_api_key)
@@ -344,10 +343,10 @@ pub trait ContainerPlatform {
         &self,
         model: &containers::Model,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        let tailnet = CONFIG
-            .tailscale_tailnet
-            .clone()
-            .ok_or_else(|| "tailscale_tailnet not found in config".to_string())?;
+        let tailnet = SERVER_CONFIG
+            .tailscale.as_ref()
+            .map(|ts| ts.tailnet.clone())
+            .expect("Tailscale tailnet not found in config");
 
         debug!("Tailnet: {}", tailnet);
 
@@ -412,7 +411,7 @@ pub trait ContainerPlatform {
         &self,
         user_profile: &V1UserProfile,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        let config = crate::config::GlobalConfig::read().unwrap();
+        let config = ClientConfig::read().unwrap();
 
         debug!("[DEBUG] get_agent_key: Entering function");
         debug!("[DEBUG] get_agent_key: user_profile = {:?}", user_profile);
@@ -606,10 +605,10 @@ pub async fn get_ip_for_tailscale_device_hostname(
         "[Tailscale] Attempting to fetch IP for hostname: {}",
         device_hostname
     );
-    let tailscale_api_key = CONFIG
-        .tailscale_api_key
-        .clone()
-        .ok_or_else(|| "TAILSCALE_API_KEY not found in config".to_string())?;
+    let tailscale_api_key = SERVER_CONFIG
+        .tailscale.as_ref()
+        .map(|ts| ts.api_key.clone())
+        .expect("Tailscale API key not found in config");
     let client = TailscaleClient::new(tailscale_api_key);
 
     // Use "-" for the default tailnet.

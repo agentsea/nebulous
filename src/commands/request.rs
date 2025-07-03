@@ -1,10 +1,11 @@
 use serde_json::Value;
+use nebulous::config::ClientConfig;
 
 fn prepare_request(
     path: &str,
     method: reqwest::Method,
 ) -> Result<reqwest::RequestBuilder, Box<dyn std::error::Error>> {
-    let config = nebulous::config::GlobalConfig::read()?;
+    let config = ClientConfig::read()?;
     let current_server = config
         .get_current_server_config()
         .ok_or("Failed to get current server configuration")?;
