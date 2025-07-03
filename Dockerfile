@@ -8,9 +8,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     protobuf-compiler \
-    sqlite3 \
     unzip \
-    libsqlite3-dev \
     g++ \
     cmake \
     zlib1g-dev \
@@ -47,8 +45,6 @@ FROM debian:bullseye-slim AS tools
 # Install runtime dependencies and tools in a single layer
 RUN apt-get update && apt-get install -y \
     ca-certificates \
-    sqlite3 \
-    libsqlite3-0 \
     curl \
     unzip \
     openssh-client \
@@ -76,8 +72,6 @@ COPY --from=tools /usr/local/bin/aws /usr/local/bin/aws
 # Install runtime dependencies including Tailscale
 RUN apt-get update && apt-get install -y \
     ca-certificates \
-    sqlite3 \
-    libsqlite3-0 \
     openssh-client \
     curl \
     gnupg \
@@ -98,7 +92,6 @@ WORKDIR /data
 
 # Set environment variables
 ENV RUST_LOG=info
-ENV DATABASE_URL=sqlite:/data/nebulous.db
 
 # Expose the default port
 EXPOSE 3000
