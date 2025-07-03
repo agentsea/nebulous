@@ -19,19 +19,19 @@ steps:
         
         # Add latest tag if on main branch
         if [ "$BRANCH_NAME" == "main" ]; then
-          TAGS="$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
+          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
         fi
         
         # Add version tag if TAG_NAME exists
         if [ -n "$TAG_NAME" ]; then
           echo "Detected tag: $TAG_NAME. Adding version tag."
-          TAGS="$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
+          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
         fi
         
         # Build and push all tags in one operation
         docker buildx build \
           --platform linux/amd64 \
-          $TAGS \
+          $$TAGS \
           --push \
           .
 
