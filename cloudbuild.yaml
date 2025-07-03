@@ -32,8 +32,6 @@ steps:
         docker buildx build \
           --platform linux/amd64 \
           $TAGS \
-          --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/server:buildcache \
-          --cache-to type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/server:buildcache,mode=max \
           --push \
           .
 
