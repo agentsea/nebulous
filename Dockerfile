@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.82-slim-bullseye AS builder
+FROM rust:1.86-slim-bullseye AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -24,24 +24,27 @@ ENV RUSTC_WRAPPER=sccache
 
 # Create a new empty shell project with only Cargo files
 WORKDIR /usr/src/nebulous
-# Copy Cargo.toml first and handle missing Cargo.lock
-COPY Cargo.toml ./
-# Create empty Cargo.lock if it doesn't exist
-RUN touch Cargo.lock
 
-# Pre-build dependencies to leverage Docker layer caching
-RUN cargo build --release || true
+COPY Cargo.toml Cargo.lock* ./
 
-# Now copy actual source code
-COPY . .
+# Create a dummy main.rs to build dependencies
+RUN mkdir src && \
+    echo "fn main() {}" > src/main.rs && \
+    echo "pub fn lib() {}" > src/lib.rs
 
-# Build with release profile
 RUN cargo build --release
 
-# Runtime stage
-FROM debian:bullseye-slim
+# Remove the dummy files and copy actual source code
+RUN rm -rf src
+COPY . .
 
-# Install runtime dependencies
+# Build with release profile (this will reuse the cached dependencies)
+RUN cargo build --release
+
+# Tools stage - install runtime tools
+FROM debian:bullseye-slim AS tools
+
+# Install runtime dependencies and tools in a single layer
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     sqlite3 \
@@ -49,28 +52,45 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     openssh-client \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the binary from builder - fix the binary name
+# Install rclone, AWS CLI, and Tailscale in parallel
+RUN curl -fsSL https://rclone.org/install.sh | bash && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip aws && \
+    curl -fsSL https://pkgs.tailscale.com/stable/debian/bullseye.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null && \
+    curl -fsSL https://pkgs.tailscale.com/stable/debian/bullseye.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list && \
+    apt-get update && apt-get install -y tailscale && \
+    rm -rf /var/lib/apt/lists/*
+
+# Runtime stage
+FROM debian:bullseye-slim
+
+# Copy tools from tools stage
+COPY --from=tools /usr/bin/rclone /usr/bin/rclone
+COPY --from=tools /usr/local/bin/aws /usr/local/bin/aws
+
+# Install runtime dependencies including Tailscale
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    sqlite3 \
+    libsqlite3-0 \
+    openssh-client \
+    curl \
+    gnupg \
+    && curl -fsSL https://pkgs.tailscale.com/stable/debian/bullseye.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null \
+    && curl -fsSL https://pkgs.tailscale.com/stable/debian/bullseye.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list \
+    && apt-get update && apt-get install -y tailscale \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the binary from builder
 COPY --from=builder /usr/src/nebulous/target/release/nebulous /usr/local/bin/nebulous
 
 # Create a symlink for the 'nebu' command to point to 'nebulous'
 RUN ln -s /usr/local/bin/nebulous /usr/local/bin/nebu
-
-# Install rclone
-RUN curl https://rclone.org/install.sh | bash
-
-# Install AWS CLI
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install && \
-    rm -rf awscliv2.zip aws
-
-# Install Tailscale
-# RUN curl -fsSL https://tailscale.com/install.sh | sh
-RUN curl -fsSL https://pkgs.tailscale.com/stable/debian/bullseye.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-RUN curl -fsSL https://pkgs.tailscale.com/stable/debian/bullseye.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list
-RUN apt-get update && apt-get install -y tailscale
 
 # Create directory for SQLite database
 RUN mkdir -p /data
