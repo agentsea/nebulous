@@ -575,9 +575,9 @@ impl RunpodPlatform {
                             // 1) Check for /done.txt in the container
                             info!("[Runpod Controller] container running...");
 
-                            match self.get_tailscale_device_ip(&container).await {
+                            match self.get_vpn_device_ip(&container).await {
                                 Ok(ip) => {
-                                    info!("[Runpod Controller] Acquired Tailscale IP: {}", ip);
+                                    info!("[Runpod Controller] Acquired VPN IP: {}", ip);
                                     if let Err(e) = Mutation::update_container_tailnet_ip(
                                         db,
                                         container_id.clone(),
@@ -593,7 +593,7 @@ impl RunpodPlatform {
                                 }
                                 Err(e) => {
                                     warn!(
-                                        "[Runpod Controller] Failed to get Tailscale device IP for container {}: {}",
+                                        "[Runpod Controller] Failed to get VPN device IP for container {}: {}",
                                         container.id, e
                                     );
                                 }
@@ -928,7 +928,7 @@ impl RunpodPlatform {
     ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         let hostname = match &container.tailnet_ip {
             Some(ip) => ip.clone(),
-            None => self.get_tailscale_device_name(container).await,
+            None => self.get_vpn_device_name(container).await,
         };
 
         let user = container
@@ -1483,7 +1483,7 @@ impl RunpodPlatform {
             env_vec
         );
 
-        let hostname = self.get_tailscale_device_name(&model).await;
+        let hostname = self.get_vpn_device_name(&model).await;
         info!("[Runpod Controller] Hostname: {}", hostname);
 
         let docker_command = self.build_command(&model, &hostname);
@@ -1965,7 +1965,7 @@ done
 
         let hostname = match container_model.tailnet_ip {
             Some(ip) => ip,
-            None => self.get_tailscale_device_name(&container_model).await,
+            None => self.get_vpn_device_name(&container_model).await,
         };
 
         info!("[Runpod Controller] Current hostname for ssh: {}", hostname);
@@ -2013,7 +2013,7 @@ done
         // Get the container's tailnet IP or hostname
         let hostname = match &container.tailnet_ip {
             Some(ip) => ip.clone(),
-            None => self.get_tailscale_device_name(container).await,
+            None => self.get_vpn_device_name(container).await,
         };
 
         // Build the health check URL
@@ -2543,7 +2543,7 @@ impl ContainerPlatform for RunpodPlatform {
 
         let hostname = match container_model.tailnet_ip {
             Some(ip) => ip,
-            None => self.get_tailscale_device_name(&container_model).await,
+            None => self.get_vpn_device_name(&container_model).await,
         };
 
         // Then call exec_ssh_command or whatever you need:
@@ -2603,7 +2603,7 @@ impl ContainerPlatform for RunpodPlatform {
 
         let hostname = match container_model.tailnet_ip {
             Some(ip) => ip,
-            None => self.get_tailscale_device_name(&container_model).await,
+            None => self.get_vpn_device_name(&container_model).await,
         };
         let output = match crate::ssh::exec::run_ssh_command_ts(
             &hostname,
