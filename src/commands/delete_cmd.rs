@@ -1,6 +1,6 @@
 use crate::commands::request::server_request;
 use futures::future::join_all;
-use nebulous::config::GlobalConfig;
+use nebulous::config::ClientConfig;
 use nebulous::resources::v1::containers::models::V1Containers;
 use reqwest::Client;
 use std::error::Error;
@@ -138,7 +138,7 @@ pub async fn delete_processor(
     namespace: Option<String>,
 ) -> Result<(), Box<dyn Error>> {
     let client = Client::new();
-    let config = GlobalConfig::read()?;
+    let config = ClientConfig::read()?;
     let current_server = config.get_current_server_config().unwrap();
     let server = current_server.server.as_ref().unwrap();
     let api_key = current_server.api_key.as_ref().unwrap();

@@ -1,4 +1,4 @@
-use nebulous::config::GlobalConfig;
+use nebulous::config::ClientConfig;
 use std::error::Error as StdError;
 use std::io::Write;
 
@@ -15,7 +15,7 @@ pub async fn fetch_container_logs(
     follow: bool,
 ) -> Result<String, Box<dyn StdError>> {
     // Load config
-    let config = GlobalConfig::read()?;
+    let config = ClientConfig::read()?;
     let current_server = config.get_current_server_config().unwrap();
     let server = current_server.server.as_ref().unwrap();
     let api_key = current_server.api_key.as_ref().unwrap();
@@ -143,7 +143,7 @@ async fn fetch_container_id_from_api(
     namespace: &str,
     name: &str,
 ) -> Result<String, Box<dyn StdError>> {
-    let config = nebulous::config::GlobalConfig::read()?;
+    let config = ClientConfig::read()?;
     let current_server = config.get_current_server_config().unwrap();
     let server = current_server.server.as_ref().unwrap();
     let api_key = current_server.api_key.as_ref().unwrap();

@@ -6,11 +6,12 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
  && rm -rf /var/lib/apt/lists/*
 
-RUN cargo install sccache
+RUN cargo install sccache --locked watchexec-cli
 
 ENV RUSTC_WRAPPER=sccache
 ENV SCCACHE_DIR=/sccache
+ENV RUSTFLAGS="-Awarnings"
 
 WORKDIR /usr/src/nebulous
 
-CMD ["cargo", "run", "--", "serve", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["watchexec", "-w", "src", "-w", "Cargo.toml", "-r", "cargo", "run", "--", "serve", "--host", "0.0.0.0", "--port", "3000"]

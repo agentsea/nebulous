@@ -3,7 +3,7 @@ use crate::agent::aws::{
     IamCredentials, StsCredentials,
 };
 use crate::agent::ns::auth_ns;
-use crate::config::CONFIG;
+use crate::config::SERVER_CONFIG;
 use crate::models::{V1ResourceMeta, V1UserProfile};
 use crate::state::AppState;
 use aws_config::{self, BehaviorVersion, Region};
@@ -98,8 +98,8 @@ pub async fn create_scoped_s3_token(
     };
 
     // --- Get Bucket Name from Config ---
-    // Bucket name is read from global CONFIG at startup
-    let bucket_name = CONFIG.bucket_name.clone();
+    // Bucket name is read from global SERVER_CONFIG at startup
+    let bucket_name = SERVER_CONFIG.bucket_name.clone();
     debug!(?bucket_name, "Retrieved bucket name from config");
 
     // --- Call AWS Agent ---
@@ -269,7 +269,7 @@ pub async fn generate_temp_s3_credentials(
     };
 
     // --- Get Bucket Name from Config ---
-    let bucket_name = CONFIG.bucket_name.clone();
+    let bucket_name = SERVER_CONFIG.bucket_name.clone();
 
     // Default duration: 1 hour (3600 seconds)
     let duration_seconds = 3600;

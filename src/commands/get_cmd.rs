@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use crate::commands::request::server_request;
-use nebulous::config::GlobalConfig;
+use nebulous::config::ClientConfig;
 use nebulous::resources::v1::containers::models::{V1Container, V1Containers};
 use serde_json::Value;
 use std::error::Error;
@@ -281,7 +281,7 @@ pub async fn get_processors(
     name: Option<String>,
     namespace: Option<String>,
 ) -> Result<(), Box<dyn Error>> {
-    let config = GlobalConfig::read()?;
+    let config = ClientConfig::read()?;
     debug!("Config: {:?}", config);
     let current_server = config.get_current_server_config().unwrap();
     let server = current_server.server.as_ref().unwrap();

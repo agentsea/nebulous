@@ -1,4 +1,4 @@
-use crate::config::GlobalConfig;
+use crate::config::ClientConfig;
 use crate::models::V1StreamData;
 use crate::resources::v1::containers::models::{
     V1Container, V1ContainerRequest, V1ContainerSearch, V1Containers, V1UpdateContainer,
@@ -49,7 +49,7 @@ impl NebulousClient {
     /// Creates a new NebulousClient by reading from the global config.
     /// You could also pass server and api key directly if preferred.
     pub fn new_from_config() -> Result<Self, Box<dyn Error>> {
-        let config = GlobalConfig::read()?;
+        let config = ClientConfig::read()?;
         let current_server = config
             .get_current_server_config()
             .ok_or("No current server config found")?;
