@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use std::net::IpAddr;
 use std::str::FromStr;
 use tailscale_client::{Capabilities, CreateAuthKeyRequest, CreateOpts, Devices, TailscaleClient};
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 pub struct TailscaleVpnClient {
     client: TailscaleClient,
@@ -13,19 +13,19 @@ pub struct TailscaleVpnClient {
 #[async_trait]
 impl VpnClient for TailscaleVpnClient {
     async fn new(config: VpnConfig) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let api_key = config
-            .api_key
-            .clone()
-            .ok_or_else(|| "Tailscale API key not found in config")?;
+        debug!("Initializing Tailscale VPN client");
 
-        debug!("Initializing Tailscale client with key: {}", api_key);
-        let client = TailscaleClient::new(api_key);
+        let tailscale_config = config.tailscale.clone()
+            .ok_or_else(|| "Tailscale configuration is required but not provided")?;
 
+        let client = TailscaleClient::new(tailscale_config.api_key);
+
+        info!("Tailscale VPN client initialized successfully");
         Ok(Self { client, config })
     }
 
     async fn get_device_ip(&self, hostname: &str) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        debug!("[Tailscale] Attempting to fetch IP for hostname: {}", hostname);
+        debug!("[Tailscale] Getting deviceIP for hostname: {}", hostname);
 
         // Use "-" for the default tailnet
         let device = self
@@ -64,29 +64,41 @@ impl VpnClient for TailscaleVpnClient {
     }
 
     async fn get_device_by_name(&self, name: &str) -> Result<Option<VpnDevice>, Box<dyn std::error::Error + Send + Sync>> {
+        debug!("[Tailscale] Getting device by name: {}", name);
+
         let tailnet = self
             .config
+            .tailscale
+            .as_ref()
+            .ok_or_else(|| "Tailscale configuration not found")?
             .tailnet
-            .clone()
-            .ok_or_else(|| "tailscale_tailnet not found in config".to_string())?;
+            .clone();
 
-        let device = self.client.find_device_by_name(&tailnet, name, None).await?;
+        let device_opt = self.client.find_device_by_name(&tailnet, name, None).await?;
 
-        Ok(device.map(|d| VpnDevice {
-            name: d.name,
-            hostname: d.hostname,
-            addresses: d.addresses,
-            tags: d.tags,
-            created: d.created,
-        }))
+        if let Some(device) = device_opt {
+            Ok(Some(VpnDevice {
+                name: device.name,
+                hostname: device.hostname,
+                addresses: device.addresses,
+                tags: device.tags,
+                created: device.created,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 
     async fn remove_device_by_name(&self, name: &str) -> Result<Option<VpnDevice>, Box<dyn std::error::Error + Send + Sync>> {
+        debug!("[Tailscale] Removing device by name: {}", name);
+
         let tailnet = self
             .config
+            .tailscale
+            .as_ref()
+            .ok_or_else(|| "Tailscale configuration not found")?
             .tailnet
-            .clone()
-            .ok_or_else(|| "tailscale_tailnet not found in config".to_string())?;
+            .clone();
 
         debug!("Ensuring no existing Tailscale device for {}", name);
 
@@ -102,15 +114,18 @@ impl VpnClient for TailscaleVpnClient {
     }
 
     async fn create_auth_key(&self, description: &str, capabilities: Option<VpnKeyCapabilities>) -> Result<VpnAuthKey, Box<dyn std::error::Error + Send + Sync>> {
+        debug!("[Tailscale] Creating auth key with description: {}", description);
+
         let tailnet = self
             .config
+            .tailscale
+            .as_ref()
+            .ok_or_else(|| "Tailscale configuration not found")?
             .tailnet
-            .clone()
-            .ok_or_else(|| "tailscale_tailnet not found in config".to_string())?;
+            .clone();
 
         debug!("Tailnet: {}", tailnet);
 
-        // Convert our generic capabilities to Tailscale-specific ones
         let tailscale_capabilities = capabilities.map(|caps| Capabilities {
             devices: Devices {
                 create: caps.devices.and_then(|dev_caps| {
@@ -158,8 +173,7 @@ impl VpnClient for TailscaleVpnClient {
             description: response.description,
             created: response.created,
             expires: response.expires,
-            capabilities: None, // Tailscale doesn't return capabilities in response
+            capabilities: None,
         })
     }
-
 } 
