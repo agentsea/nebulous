@@ -35,15 +35,11 @@ The VPN provider is configured through environment variables:
 # VPN Provider (tailscale or headscale)
 export VPN_PROVIDER=tailscale
 
-# API Key (supports multiple env var names for backward compatibility)
+# API Key
 export VPN_API_KEY=your_api_key
-# or
-export TAILSCALE_API_KEY=your_tailscale_api_key
 
 # Tailnet/Organization
 export VPN_TAILNET=your_tailnet
-# or
-export TAILSCALE_TAILNET=your_tailnet
 
 # Login Server (for Headscale)
 export VPN_LOGIN_SERVER=http://headscale:50443
@@ -152,14 +148,6 @@ impl VpnClient for WireguardVpnClient {
 | `VPN_LOGIN_SERVER` | Login server URL | - |
 | `VPN_ORGANIZATION` | Organization name (Headscale) | - |
 
-### Backward Compatibility
-
-The following legacy environment variables are still supported:
-
-- `TAILSCALE_API_KEY` → `VPN_API_KEY`
-- `TAILSCALE_TAILNET` → `VPN_TAILNET`
-- `TS_API_KEY` → `VPN_API_KEY`
-
 ## Error Handling
 
 All VPN operations return `Result<T, Box<dyn std::error::Error + Send + Sync>>` to handle provider-specific errors gracefully.
@@ -172,6 +160,7 @@ To test with different providers:
 # Test with Tailscale
 export VPN_PROVIDER=tailscale
 export VPN_API_KEY=your_tailscale_key
+export VPN_TAILNET=your_tailnet
 
 # Test with Headscale (PLACEHOLDER - will raise NotImplementedError)
 export VPN_PROVIDER=headscale

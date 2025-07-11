@@ -157,10 +157,6 @@ pub struct ServerConfig {
     pub vpn_tailnet: Option<String>,
     pub vpn_login_server: Option<String>,
     pub vpn_organization: Option<String>,
-    // Legacy Tailscale config for backward compatibility
-    pub tailscale_api_key: Option<String>,
-    pub tailscale_tailnet: Option<String>,
-    pub tailscale: Option<TailscaleConfig>,
     pub auth: ServerAuthConfig,
     pub bucket_name: String,
     pub bucket_region: String,
@@ -182,7 +178,6 @@ impl DatabaseConfig {
         dotenv().ok();
 
         Self {
-<<<<<<< HEAD
             host: env::var("DATABASE_HOST").unwrap_or_else(|_| "localhost".to_string()),
             port: env::var("DATABASE_PORT")
                 .unwrap_or_else(|_| "5432".to_string())
@@ -257,12 +252,6 @@ impl KafkaConfig {
 }
 
 #[derive(Debug, Clone)]
-pub struct TailscaleConfig {
-    pub api_key: String,
-    pub tailnet: String,
-}
-
-#[derive(Debug, Clone)]
 pub struct ServerAuthConfig {
     pub internal: bool,
     pub url: String,
@@ -315,32 +304,12 @@ impl ServerConfig {
         let redis = RedisConfig::new();
         let kafka = KafkaConfig::new();
 
-        let vpn_provider = env::var("VPN_PROVIDER").or_else(|_| env::var("NEBU_VPN_PROVIDER")).ok();
-        let vpn_api_key = env::var("VPN_API_KEY")
-            .or_else(|_| env::var("NEBU_VPN_API_KEY"))
-            .or_else(|_| env::var("TS_API_KEY"))
-            .or_else(|_| env::var("TAILSCALE_API_KEY"))
-            .ok();
-        let vpn_tailnet = env::var("VPN_TAILNET")
-            .or_else(|_| env::var("NEBU_VPN_TAILNET"))
-            .or_else(|_| env::var("TAILSCALE_TAILNET"))
-            .ok();
-        let vpn_login_server = env::var("VPN_LOGIN_SERVER")
-            .or_else(|_| env::var("NEBU_VPN_LOGIN_SERVER"))
-            .ok();
-        let vpn_organization = env::var("VPN_ORGANIZATION")
-            .or_else(|_| env::var("NEBU_VPN_ORGANIZATION"))
-            .ok();
+        let vpn_provider = env::var("VPN_PROVIDER").ok();
+        let vpn_api_key = env::var("VPN_API_KEY").ok();
+        let vpn_tailnet = env::var("VPN_TAILNET").ok();
+        let vpn_login_server = env::var("VPN_LOGIN_SERVER").ok();
+        let vpn_organization = env::var("VPN_ORGANIZATION").ok();
         
-        // Legacy Tailscale config for backward compatibility
-        let tailscale_api_key = env::var("TS_API_KEY").or_else(|_| env::var("TAILSCALE_API_KEY")).ok();
-        let tailscale_tailnet = env::var("TAILSCALE_TAILNET").ok();
-
-        let tailscale = match (env::var("TS_API_KEY"), env::var("TS_TAILNET")) {
-            (Ok(api_key), Ok(tailnet)) => Some(TailscaleConfig { api_key, tailnet }),
-            _ => None,
-        };
-
         let auth = ServerAuthConfig::new();
 
         Self {
@@ -353,9 +322,6 @@ impl ServerConfig {
             vpn_tailnet,
             vpn_login_server,
             vpn_organization,
-            tailscale_api_key,
-            tailscale_tailnet,
-            tailscale,
             auth,
             bucket_name: env::var("NEBU_BUCKET_NAME")
                 .unwrap_or_else(|_| panic!("NEBU_BUCKET_NAME environment variable must be set")),
