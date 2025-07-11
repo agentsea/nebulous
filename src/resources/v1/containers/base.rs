@@ -7,12 +7,12 @@ use crate::models::{V1CreateAgentKeyRequest, V1UserProfile};
 use crate::orign::get_orign_server;
 use crate::query::Query;
 use crate::resources::v1::containers::models::{V1Container, V1ContainerRequest};
+use crate::vpn::{get_vpn_client, VpnKeyCapabilities, VpnDeviceCapabilities, VpnCreateOpts};
 use sea_orm::DatabaseConnection;
 use std::collections::HashMap;
 use std::fmt;
 use std::net::IpAddr;
 use std::str::FromStr;
-use tailscale_client::{Capabilities, CreateAuthKeyRequest, CreateOpts, Devices, TailscaleClient};
 use tracing::{debug, error, info};
 
 /// Enum for container status
@@ -279,13 +279,13 @@ pub trait ContainerPlatform {
         );
         env.insert("ROOT_VOLUME_URI".to_string(), root_volume_uri);
 
-        match self.get_tailscale_device_key(model).await {
+        match self.get_vpn_device_key(model).await {
             Ok(key) => {
                 env.insert("TS_AUTHKEY".to_string(), key);
             }
             Err(e) => {
                 error!(
-                    "Failed to get Tailscale device key for container {}: {:?}. Propagating error.",
+                    "Failed to get VPN device key for container {}: {:?}. Propagating error.",
                     model.id, e
                 );
                 return Err(e);
@@ -301,110 +301,67 @@ pub trait ContainerPlatform {
         Ok(env)
     }
 
-    async fn get_tailscale_device_name(&self, model: &containers::Model) -> String {
-        get_tailscale_device_name(model).await
+    async fn get_vpn_device_name(&self, model: &containers::Model) -> String {
+        get_vpn_device_name(model).await
     }
 
-    async fn get_tailscale_device_ip(
+    async fn get_vpn_device_ip(
         &self,
         model: &containers::Model,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        let client = self.get_tailscale_client().await;
-        let name = self.get_tailscale_device_name(model).await;
+        let client = get_vpn_client()?;
+        let name = self.get_vpn_device_name(model).await;
 
-        let device = client
-            .find_device_by_name("-", &name, None)
-            .await?
-            .ok_or_else(|| format!("No Tailscale device found with name '{}'", name))?;
-
-        let addresses = device
-            .addresses
-            .as_ref()
-            .ok_or_else(|| format!("Tailscale device '{}' has no addresses", name))?;
-
-        let ipv4 = addresses
-            .iter()
-            .find(|s| IpAddr::from_str(s).map_or(false, |ip_addr| ip_addr.is_ipv4()))
-            .ok_or_else(|| format!("No IPv4 address found for Tailscale device '{}'", name))?;
-
-        Ok(ipv4.to_string())
+        client.get_device_ip(&name).await
     }
 
-    async fn get_tailscale_client(&self) -> TailscaleClient {
-        let tailscale_api_key = SERVER_CONFIG
-            .tailscale.as_ref()
-            .map(|ts| ts.api_key.clone())
-            .expect("Tailscale API key not found in config");
-        debug!("Tailscale key: {}", tailscale_api_key);
-        TailscaleClient::new(tailscale_api_key)
-    }
-
-    async fn get_tailscale_device_key(
+    async fn get_vpn_device_key(
         &self,
         model: &containers::Model,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        let tailnet = SERVER_CONFIG
-            .tailscale.as_ref()
-            .map(|ts| ts.tailnet.clone())
-            .expect("Tailscale tailnet not found in config");
+        let client = get_vpn_client()?;
+        let name = self.get_vpn_device_name(model).await;
 
-        debug!("Tailnet: {}", tailnet);
-
-        let client = self.get_tailscale_client().await;
-        let name = self.get_tailscale_device_name(model).await;
-
-        debug!("Ensuring no existing Tailscale device for {}", name);
-        match client.remove_device_by_name(&tailnet, &name, None).await {
+        debug!("Ensuring no existing VPN device for {}", name);
+        match client.remove_device_by_name(&name).await {
             Ok(Some(_deleted_device)) => {
                 debug!(
-                    "Successfully removed existing Tailscale device for {}",
+                    "Successfully removed existing VPN device for {}",
                     name
                 );
             }
             Ok(None) => {
                 debug!(
-                    "No existing Tailscale device found for {}, proceeding.",
+                    "No existing VPN device found for {}, proceeding.",
                     name
                 );
             }
             Err(e) => {
                 error!(
-                    "Error removing existing Tailscale device for {}: {}. Proceeding with key creation attempt.",
+                    "Error removing existing VPN device for {}: {}. Proceeding with key creation attempt.",
                     name, e
                 );
             }
         }
 
-        let request_body = CreateAuthKeyRequest {
-            description: Some(format!("Nebu ephemeral key for container {}", model.id)),
-            expirySeconds: None,
-            capabilities: Capabilities {
-                devices: Devices {
-                    create: Some(CreateOpts {
-                        reusable: Some(false),
-                        ephemeral: Some(true),
-                        preauthorized: Some(true),
-                        tags: Some(vec!["tag:container".to_string()]),
-                    }),
-                },
-            },
+        let capabilities = VpnKeyCapabilities {
+            devices: Some(VpnDeviceCapabilities {
+                create: Some(VpnCreateOpts {
+                    reusable: Some(false),
+                    ephemeral: Some(true),
+                    preauthorized: Some(true),
+                    tags: Some(vec!["tag:container".to_string()]),
+                }),
+            }),
         };
 
-        let response = match client.create_auth_key(&tailnet, true, &request_body).await {
-            Ok(resp) => resp,
-            Err(e) => {
-                return Err(format!("Failed to create Tailscale auth key: {}", e).into());
-            }
-        };
+        let auth_key = client.create_auth_key(
+            &format!("Nebu ephemeral key for container {}", model.id),
+            Some(capabilities),
+        ).await?;
 
-        debug!("CreateAuthKeyResponse: {:?}", response);
-        let key = response.key.ok_or_else(|| {
-            "Server did not return a value in `key` from Tailscale API after key creation"
-                .to_string()
-        })?;
-
-        debug!("Tailscale auth key generated: {}", key);
-        Ok(key)
+        debug!("VPN auth key generated: {}", auth_key.key);
+        Ok(auth_key.key)
     }
 
     async fn get_agent_key(
@@ -593,73 +550,13 @@ pub trait ContainerController {
     async fn reconcile(&self);
 }
 
-pub async fn get_tailscale_device_name(model: &containers::Model) -> String {
+pub async fn get_vpn_device_name(model: &containers::Model) -> String {
     format!("container-{}", model.id)
 }
 
-/// Fetches the IPv4 address of a device from Tailscale using its hostname.
-pub async fn get_ip_for_tailscale_device_hostname(
+/// Fetches the IPv4 address of a device from VPN using its hostname.
+pub async fn get_ip_for_vpn_device_hostname(
     device_hostname: &str,
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    debug!(
-        "[Tailscale] Attempting to fetch IP for hostname: {}",
-        device_hostname
-    );
-    let tailscale_api_key = SERVER_CONFIG
-        .tailscale.as_ref()
-        .map(|ts| ts.api_key.clone())
-        .expect("Tailscale API key not found in config");
-    let client = TailscaleClient::new(tailscale_api_key);
-
-    // Use "-" for the default tailnet.
-    let device = client
-        .find_device_by_name("-", device_hostname, None)
-        .await?
-        .ok_or_else(|| {
-            error!(
-                "[Tailscale] Device with hostname '{}' not found.",
-                device_hostname
-            );
-            format!(
-                "No Tailscale device found with hostname '{}'",
-                device_hostname
-            )
-        })?;
-
-    debug!(
-        "[Tailscale] Found device for hostname '{}': Name in response: {:?}",
-        device_hostname,
-        device.name.as_deref().unwrap_or("N/A")
-    );
-
-    let addresses = device.addresses.as_ref().ok_or_else(|| {
-        error!(
-            "[Tailscale] Device '{}' has no IP addresses listed.",
-            device_hostname
-        );
-        format!(
-            "Tailscale device '{}' has no addresses listed",
-            device_hostname
-        )
-    })?;
-
-    let ipv4 = addresses
-        .iter()
-        .find(|s| IpAddr::from_str(s).map_or(false, |ip_addr| ip_addr.is_ipv4()))
-        .ok_or_else(|| {
-            error!(
-                "[Tailscale] No IPv4 address found for device '{}'. Addresses found: {:?}",
-                device_hostname, addresses
-            );
-            format!(
-                "No IPv4 address found for Tailscale device '{}'",
-                device_hostname
-            )
-        })?;
-
-    debug!(
-        "[Tailscale] Found IPv4 '{}' for device '{}'",
-        ipv4, device_hostname
-    );
-    Ok(ipv4.to_string())
+    get_vpn_client()?.get_device_ip(device_hostname).await
 }

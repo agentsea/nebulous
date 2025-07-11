@@ -21,6 +21,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
+    // Initialize VPN client
+    if let Err(e) = nebulous::vpn::init_vpn_from_config().await {
+        eprintln!("Failed to initialize VPN client: {}", e);
+    }
+
     // Parse command-line arguments
     let cli = Cli::parse();
 

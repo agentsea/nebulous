@@ -152,15 +152,15 @@ pub struct ServerConfig {
     pub message_queue_type: String,
     pub redis: RedisConfig,
     pub kafka: KafkaConfig,
-
-    pub tailscale: Option<TailscaleConfig>,
-
+    pub vpn_provider: Option<String>,
+    pub vpn_api_key: Option<String>,
+    pub vpn_tailnet: Option<String>,
+    pub vpn_login_server: Option<String>,
+    pub vpn_organization: Option<String>,
     pub auth: ServerAuthConfig,
-
     pub bucket_name: String,
     pub bucket_region: String,
     pub root_owner: String,
-
     pub publish_url: Option<String>,
 }
 
@@ -252,12 +252,6 @@ impl KafkaConfig {
 }
 
 #[derive(Debug, Clone)]
-pub struct TailscaleConfig {
-    pub api_key: String,
-    pub tailnet: String,
-}
-
-#[derive(Debug, Clone)]
 pub struct ServerAuthConfig {
     pub internal: bool,
     pub url: String,
@@ -307,15 +301,15 @@ impl ServerConfig {
             Err(_) => "redis".to_string(),
         };
 
-
         let redis = RedisConfig::new();
         let kafka = KafkaConfig::new();
 
-        let tailscale = match (env::var("TS_API_KEY"), env::var("TS_TAILNET")) {
-            (Ok(api_key), Ok(tailnet)) => Some(TailscaleConfig { api_key, tailnet }),
-            _ => None,
-        };
-
+        let vpn_provider = env::var("VPN_PROVIDER").ok();
+        let vpn_api_key = env::var("VPN_API_KEY").ok();
+        let vpn_tailnet = env::var("VPN_TAILNET").ok();
+        let vpn_login_server = env::var("VPN_LOGIN_SERVER").ok();
+        let vpn_organization = env::var("VPN_ORGANIZATION").ok();
+        
         let auth = ServerAuthConfig::new();
 
         Self {
@@ -323,9 +317,12 @@ impl ServerConfig {
             message_queue_type,
             redis,
             kafka,
-            tailscale,
+            vpn_provider,
+            vpn_api_key,
+            vpn_tailnet,
+            vpn_login_server,
+            vpn_organization,
             auth,
-            // TODO: Move this to dedicated config
             bucket_name: env::var("NEBU_BUCKET_NAME")
                 .unwrap_or_else(|_| panic!("NEBU_BUCKET_NAME environment variable must be set")),
             bucket_region: env::var("NEBU_BUCKET_REGION")

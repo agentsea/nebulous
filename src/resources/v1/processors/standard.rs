@@ -6,7 +6,7 @@ use crate::models::V1CreateAgentKeyRequest;
 use crate::models::V1UserProfile;
 use crate::mutation::Mutation;
 use crate::query::Query;
-use crate::resources::v1::containers::base::get_ip_for_tailscale_device_hostname;
+use crate::resources::v1::containers::base::get_ip_for_vpn_device_hostname;
 use crate::resources::v1::containers::base::ContainerStatus;
 use crate::resources::v1::containers::factory::platform_factory;
 use crate::resources::v1::containers::models::V1ContainerRequest;
@@ -145,13 +145,13 @@ impl StandardProcessor {
             secret_name: None,
         });
 
-        // Fetch Redis IP from Tailscale
+        // Fetch Redis IP from VPN
         let redis_hostname = "redis"; // Or get this from config if it can vary
-        let redis_ip = match get_ip_for_tailscale_device_hostname(redis_hostname).await {
+        let redis_ip = match get_ip_for_vpn_device_hostname(redis_hostname).await {
             Ok(ip) => ip,
             Err(e) => {
                 error!(
-                    "[Processor Controller] Failed to get Tailscale IP for '{}': {}. Falling back to configured REDIS_URL/REDIS_PUBLISH_URL.",
+                    "[Processor Controller] Failed to get VPN IP for '{}': {}. Falling back to configured REDIS_URL/REDIS_PUBLISH_URL.",
                     redis_hostname,
                     e
                 );

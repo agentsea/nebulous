@@ -3,7 +3,7 @@ use crate::models::V1UserProfile;
 use crate::proxy::authz::evaluate_authorization_rules;
 use crate::proxy::meters::{send_request_metrics, send_response_metrics};
 use crate::query::Query;
-use crate::resources::v1::containers::base::get_tailscale_device_name;
+use crate::resources::v1::containers::base::get_vpn_device_name;
 use crate::AppState;
 use axum::body::Body;
 use axum::http::Uri;
@@ -128,7 +128,7 @@ pub async fn forward_container(
 
     let hostname = match container_model.tailnet_ip {
         Some(ip) => ip,
-        None => get_tailscale_device_name(&container_model).await,
+        None => get_vpn_device_name(&container_model).await,
     };
 
     debug!("[PROXY] Hostname: {hostname}");

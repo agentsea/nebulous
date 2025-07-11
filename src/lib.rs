@@ -29,6 +29,7 @@ pub mod streams;
 pub mod utils;
 pub mod validate;
 pub mod volumes;
+pub mod vpn;
 
 use crate::config::SERVER_CONFIG;
 use crate::handlers::v1::namespaces::ensure_namespace;
