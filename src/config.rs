@@ -286,7 +286,7 @@ impl VpnConfig {
         let api_key = env::var("TS_APIKEY").ok();
         let tailnet = env::var("TS_TAILNET").ok();
         let organization = env::var("TS_ORGANIZATION").ok();
-        let login_server = env::var("HS_LOGIN_SERVER").ok();
+        let login_server = env::var("TS_LOGIN_SERVER").ok();
         Self {
             provider,
             api_key,
