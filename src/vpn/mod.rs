@@ -21,7 +21,6 @@ pub struct TailscaleConfig {
 pub struct HeadscaleConfig {
     pub api_key: String,
     pub login_server: String,
-    pub organization: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,7 +31,6 @@ pub struct VpnConfig {
 }
 
 impl VpnConfig {
-    /// Create a new VPN configuration for Tailscale
     pub fn tailscale(api_key: String, tailnet: String) -> Self {
         Self {
             provider: VpnProvider::Tailscale,
@@ -41,16 +39,14 @@ impl VpnConfig {
         }
     }
 
-    /// Create a new VPN configuration for Headscale
-    pub fn headscale(api_key: String, login_server: String, organization: Option<String>) -> Self {
+    pub fn headscale(api_key: String, login_server: String) -> Self {
         Self {
             provider: VpnProvider::Headscale,
             tailscale: None,
-            headscale: Some(HeadscaleConfig { api_key, login_server, organization }),
+            headscale: Some(HeadscaleConfig { api_key, login_server }),
         }
     }
 
-    /// Validate that the configuration is complete for the selected provider
     pub fn validate(&self) -> Result<(), String> {
         match self.provider {
             VpnProvider::Tailscale => {
@@ -81,14 +77,13 @@ impl VpnConfig {
         Ok(())
     }
 
-    /// Validate environment variables for the specified provider
     pub fn validate_env_for_provider(provider: &VpnProvider) -> Result<(), String> {
         use crate::config::SERVER_CONFIG;
         
         match provider {
             VpnProvider::Tailscale => {
-                let api_key = SERVER_CONFIG.vpn_api_key.as_ref();
-                let tailnet = SERVER_CONFIG.vpn_tailnet.as_ref();
+                let api_key = SERVER_CONFIG.vpn.api_key.as_ref();
+                let tailnet = SERVER_CONFIG.vpn.tailnet.as_ref();
                 
                 if api_key.is_none() {
                     return Err("Tailscale requires VPN_API_KEY environment variable".to_string());
@@ -98,8 +93,8 @@ impl VpnConfig {
                 }
             }
             VpnProvider::Headscale => {
-                let api_key = SERVER_CONFIG.vpn_api_key.as_ref();
-                let login_server = SERVER_CONFIG.vpn_login_server.as_ref();
+                let api_key = SERVER_CONFIG.vpn.api_key.as_ref();
+                let login_server = SERVER_CONFIG.vpn.login_server.as_ref();
                 
                 if api_key.is_none() {
                     return Err("Headscale requires VPN_API_KEY environment variable".to_string());
@@ -216,16 +211,11 @@ pub fn get_device_name_for_container(container_id: &str) -> Result<String, Box<d
 pub async fn init_vpn_from_config() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     use crate::config::SERVER_CONFIG;
     
-    let provider = match SERVER_CONFIG.vpn_provider.as_deref() {
-        Some("headscale") | Some("Headscale") => VpnProvider::Headscale,
-        Some("tailscale") | Some("Tailscale") => VpnProvider::Tailscale,
-        Some(_) => {
-            // Default to Tailscale for any other value
-            VpnProvider::Tailscale
-        }
-        None => {
-            // Default to Tailscale for backward compatibility
-            VpnProvider::Tailscale
+    let provider = match SERVER_CONFIG.vpn.provider.as_str() {
+        "headscale" | "Headscale" => VpnProvider::Headscale,
+        "tailscale" | "Tailscale" => VpnProvider::Tailscale,
+        _ => {
+            return Err(format!("Invalid VPN provider: {}", SERVER_CONFIG.vpn.provider).into());
         }
     };
 
@@ -235,22 +225,22 @@ pub async fn init_vpn_from_config() -> Result<(), Box<dyn std::error::Error + Se
 
     let config = match provider {
         VpnProvider::Tailscale => {
-            let api_key = SERVER_CONFIG.vpn_api_key.clone()
+            let api_key = SERVER_CONFIG.vpn.api_key.clone()
                 .unwrap(); // Safe because we validated above
             
-            let tailnet = SERVER_CONFIG.vpn_tailnet.clone()
+            let tailnet = SERVER_CONFIG.vpn.tailnet.clone()
                 .unwrap(); // Safe because we validated above
 
             VpnConfig::tailscale(api_key, tailnet)
         }
         VpnProvider::Headscale => {
-            let api_key = SERVER_CONFIG.vpn_api_key.clone()
+            let api_key = SERVER_CONFIG.vpn.api_key.clone()
                 .unwrap(); // Safe because we validated above
             
-            let login_server = SERVER_CONFIG.vpn_login_server.clone()
+            let login_server = SERVER_CONFIG.vpn.login_server.clone()
                 .unwrap(); // Safe because we validated above
 
-            VpnConfig::headscale(api_key, login_server, SERVER_CONFIG.vpn_organization.clone())
+            VpnConfig::headscale(api_key, login_server)
         }
     };
 

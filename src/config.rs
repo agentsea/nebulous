@@ -152,11 +152,7 @@ pub struct ServerConfig {
     pub message_queue_type: String,
     pub redis: RedisConfig,
     pub kafka: KafkaConfig,
-    pub vpn_provider: Option<String>,
-    pub vpn_api_key: Option<String>,
-    pub vpn_tailnet: Option<String>,
-    pub vpn_login_server: Option<String>,
-    pub vpn_organization: Option<String>,
+    pub vpn: VpnConfig,
     pub auth: ServerAuthConfig,
     pub bucket_name: String,
     pub bucket_region: String,
@@ -274,6 +270,33 @@ impl ServerAuthConfig {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct VpnConfig {
+    pub provider: String,
+    pub api_key: Option<String>,
+    pub tailnet: Option<String>,
+    pub login_server: Option<String>,
+    pub organization: Option<String>,
+}
+
+impl VpnConfig {
+    pub fn new() -> Self {
+        dotenv().ok();
+        let provider = env::var("VPN_PROVIDER").unwrap_or_else(|_| "tailscale".to_string());
+        let api_key = env::var("TS_APIKEY").ok();
+        let tailnet = env::var("TS_TAILNET").ok();
+        let organization = env::var("TS_ORGANIZATION").ok();
+        let login_server = env::var("HS_LOGIN_SERVER").ok();
+        Self {
+            provider,
+            api_key,
+            tailnet,
+            login_server,
+            organization,
+        }
+    }
+}
+
 impl ServerConfig {
     pub fn new() -> Self {
         dotenv().ok();
@@ -303,12 +326,7 @@ impl ServerConfig {
 
         let redis = RedisConfig::new();
         let kafka = KafkaConfig::new();
-
-        let vpn_provider = env::var("VPN_PROVIDER").ok();
-        let vpn_api_key = env::var("VPN_API_KEY").ok();
-        let vpn_tailnet = env::var("VPN_TAILNET").ok();
-        let vpn_login_server = env::var("VPN_LOGIN_SERVER").ok();
-        let vpn_organization = env::var("VPN_ORGANIZATION").ok();
+        let vpn = VpnConfig::new();
         
         let auth = ServerAuthConfig::new();
 
@@ -317,11 +335,7 @@ impl ServerConfig {
             message_queue_type,
             redis,
             kafka,
-            vpn_provider,
-            vpn_api_key,
-            vpn_tailnet,
-            vpn_login_server,
-            vpn_organization,
+            vpn,
             auth,
             bucket_name: env::var("NEBU_BUCKET_NAME")
                 .unwrap_or_else(|_| panic!("NEBU_BUCKET_NAME environment variable must be set")),
