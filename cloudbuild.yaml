@@ -19,11 +19,15 @@ steps:
 
         # Add branch name tag if BRANCH_NAME is not empty
         if [ -n "$BRANCH_NAME" ]; then
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$BRANCH_NAME"
+          echo "Detected branch: $BRANCH_NAME. Adding branch tag."
+          DOCKER_TAG=$(echo "$BRANCH_NAME" | sed 's/[^a-z0-9._-]/-/g' | sed 's/^[.-]//' | sed 's/[.-]$//')
+          echo "Transformed branch $BRANCH_NAME to Docker tag: $DOCKER_TAG"
+          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$DOCKER_TAG"
         fi
         
         # Add latest tag if on main branch
         if [ "$BRANCH_NAME" == "main" ]; then
+          echo "Detected main branch. Adding latest tag."
           TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
         fi
         
