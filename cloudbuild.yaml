@@ -21,7 +21,7 @@ steps:
         if [ -n "$BRANCH_NAME" ]; then
           echo "Detected branch: $BRANCH_NAME. Adding branch tag."
           DOCKER_TAG=$(echo "$BRANCH_NAME" | sed 's/[^a-z0-9._-]/-/g' | sed 's/^[.-]//' | sed 's/[.-]$//')
-          echo "Transformed branch $BRANCH_NAME to Docker tag: $DOCKER_TAG"
+          echo "Transformed branch $BRANCH_NAME to Docker tag: $$DOCKER_TAG"
           TAGS="$$TAGS -t us-docker.pkg.dev/$$PROJECT_ID/nebulous/server:$$DOCKER_TAG"
         fi
         
