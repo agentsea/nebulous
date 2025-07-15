@@ -35,7 +35,7 @@ pub async fn execute(
             return Err("docker-compose.yml not found in current directory. Please run this command from the project root.".into());
         }
         
-        let status = std::process::Command::new("docker-compose")
+        let status = std::process::Command::new("docker compose")
             .args(["up", "--build"])
             .status()?;
             
