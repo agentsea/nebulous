@@ -1,6 +1,6 @@
 [package]
 name = "nebulous"
-version = "0.1.89"
+version = "0.1.90"
 edition = "2021"
 description = "A globally distributed container orchestrator"
 license = "MIT"
@@ -76,6 +76,7 @@ ed25519-dalek = "2"
 openai-api-rs = "6.0.3"
 async-ssh2-tokio = "0.8.14"
 tailscale-client = "0.1.5"
+headscale-client = { git = "https://github.com/philippschroeppel/headscale.rs.git" }
 http-body = "1.0.1"
 hickory-server = "0.25.1"
 warp = "0.3.7"

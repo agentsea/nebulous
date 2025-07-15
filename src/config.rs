@@ -152,15 +152,11 @@ pub struct ServerConfig {
     pub message_queue_type: String,
     pub redis: RedisConfig,
     pub kafka: KafkaConfig,
-
-    pub tailscale: Option<TailscaleConfig>,
-
+    pub vpn: VpnConfig,
     pub auth: ServerAuthConfig,
-
     pub bucket_name: String,
     pub bucket_region: String,
     pub root_owner: String,
-
     pub publish_url: Option<String>,
 }
 
@@ -252,12 +248,6 @@ impl KafkaConfig {
 }
 
 #[derive(Debug, Clone)]
-pub struct TailscaleConfig {
-    pub api_key: String,
-    pub tailnet: String,
-}
-
-#[derive(Debug, Clone)]
 pub struct ServerAuthConfig {
     pub internal: bool,
     pub url: String,
@@ -276,6 +266,33 @@ impl ServerAuthConfig {
         Self {
             internal: true,
             url,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct VpnConfig {
+    pub provider: String,
+    pub api_key: Option<String>,
+    pub tailnet: Option<String>,
+    pub login_server: Option<String>,
+    pub organization: Option<String>,
+}
+
+impl VpnConfig {
+    pub fn new() -> Self {
+        dotenv().ok();
+        let provider = env::var("VPN_PROVIDER").unwrap_or_else(|_| "tailscale".to_string());
+        let api_key = env::var("TS_APIKEY").ok();
+        let tailnet = env::var("TS_TAILNET").ok();
+        let organization = env::var("TS_ORGANIZATION").ok();
+        let login_server = env::var("TS_LOGIN_SERVER").ok();
+        Self {
+            provider,
+            api_key,
+            tailnet,
+            login_server,
+            organization,
         }
     }
 }
@@ -307,15 +324,10 @@ impl ServerConfig {
             Err(_) => "redis".to_string(),
         };
 
-
         let redis = RedisConfig::new();
         let kafka = KafkaConfig::new();
-
-        let tailscale = match (env::var("TS_API_KEY"), env::var("TS_TAILNET")) {
-            (Ok(api_key), Ok(tailnet)) => Some(TailscaleConfig { api_key, tailnet }),
-            _ => None,
-        };
-
+        let vpn = VpnConfig::new();
+        
         let auth = ServerAuthConfig::new();
 
         Self {
@@ -323,9 +335,8 @@ impl ServerConfig {
             message_queue_type,
             redis,
             kafka,
-            tailscale,
+            vpn,
             auth,
-            // TODO: Move this to dedicated config
             bucket_name: env::var("NEBU_BUCKET_NAME")
                 .unwrap_or_else(|_| panic!("NEBU_BUCKET_NAME environment variable must be set")),
             bucket_region: env::var("NEBU_BUCKET_REGION")
