@@ -58,6 +58,10 @@ pub enum Commands {
         /// The port to bind the internal auth server to.
         #[arg(long, default_value_t = 8080)]
         auth_port: u16,
+
+        /// Run in Docker mode (uses docker-compose)
+        #[arg(long, default_value_t = false)]
+        docker: bool,
     },
 
     /// Proxy services.

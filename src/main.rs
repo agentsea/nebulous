@@ -35,8 +35,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             port,
             internal_auth,
             auth_port,
+            docker,
         } => {
-            commands::serve_cmd::execute(host, port, internal_auth, auth_port).await?;
+            commands::serve_cmd::execute(host, port, internal_auth, auth_port, docker).await?;
         }
         Commands::Sync { command } => match command {
             SyncCommands::Volumes {

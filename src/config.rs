@@ -349,5 +349,6 @@ impl ServerConfig {
         }
     }
 }
+
 // Global static CONFIG instance
 pub static SERVER_CONFIG: Lazy<ServerConfig> = Lazy::new(ServerConfig::new);
