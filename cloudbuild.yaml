@@ -15,7 +15,12 @@ steps:
       - "-c"
       - |
         # Prepare tag list
-        TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$BRANCH_NAME"
+        TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA"
+
+        # Add branch name tag if BRANCH_NAME is not empty
+        if [ -n "$BRANCH_NAME" ]; then
+          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$BRANCH_NAME"
+        fi
         
         # Add latest tag if on main branch
         if [ "$BRANCH_NAME" == "main" ]; then
