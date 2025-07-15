@@ -47,36 +47,6 @@ impl VpnConfig {
         }
     }
 
-    pub fn validate(&self) -> Result<(), String> {
-        match self.provider {
-            VpnProvider::Tailscale => {
-                if self.tailscale.is_none() {
-                    return Err("Tailscale configuration is required for Tailscale provider".to_string());
-                }
-                let tailscale_config = self.tailscale.as_ref().unwrap();
-                if tailscale_config.api_key.is_empty() {
-                    return Err("Tailscale API key cannot be empty".to_string());
-                }
-                if tailscale_config.tailnet.is_empty() {
-                    return Err("Tailscale tailnet cannot be empty".to_string());
-                }
-            }
-            VpnProvider::Headscale => {
-                if self.headscale.is_none() {
-                    return Err("Headscale configuration is required for Headscale provider".to_string());
-                }
-                let headscale_config = self.headscale.as_ref().unwrap();
-                if headscale_config.api_key.is_empty() {
-                    return Err("Headscale API key cannot be empty".to_string());
-                }
-                if headscale_config.login_server.is_empty() {
-                    return Err("Headscale login server cannot be empty".to_string());
-                }
-            }
-        }
-        Ok(())
-    }
-
     pub fn validate_env_for_provider(provider: &VpnProvider) -> Result<(), String> {
         use crate::config::SERVER_CONFIG;
         
@@ -243,10 +213,6 @@ pub async fn init_vpn_from_config() -> Result<(), Box<dyn std::error::Error + Se
             VpnConfig::headscale(api_key, login_server)
         }
     };
-
-    // Validate the configuration
-    config.validate()
-        .map_err(|e| format!("VPN configuration validation failed: {}", e))?;
 
     debug!("Initializing VPN client with provider: {:?}", provider);
     init_vpn_client(config).await
