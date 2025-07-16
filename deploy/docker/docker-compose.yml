@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust  # No password
+    ports:
+      - "5432:5432"
+
+  nebu:
+    # image: us-docker.pkg.dev/agentsea-dev/nebulous/server:${NEBU_VERSION:-latest}
+    image: us-docker.pkg.dev/agentsea-dev/nebulous/server:latest
+    container_name: nebu
+    environment:
+      DATABASE_URL: postgres://postgres@postgres:5432/postgres
+      RUST_LOG: debug
+      NEBU_BUCKET_NAME: nebulous
+      NEBU_BUCKET_REGION: us-east-1
+      NEBU_ROOT_OWNER: me
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+
+volumes:
+  sccache:

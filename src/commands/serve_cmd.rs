@@ -17,7 +17,7 @@ pub async fn execute(
     // Check docker flag FIRST, before any configuration validation
     if docker {
         println!("Starting Nebulous in Docker mode...");
-        println!("This will use docker-compose to start the full stack.");
+        println!("This will use docker-compose to start the full stack with prebuilt images.");
         println!("Make sure you have Docker and docker-compose installed.");
         
         // Set default environment variables for docker mode to prevent validation errors
@@ -31,16 +31,22 @@ pub async fn execute(
             std::env::set_var("NEBU_ROOT_OWNER", "me");
         }
         
-        if !std::path::Path::new("docker-compose.yml").exists() {
-            return Err("docker-compose.yml not found in current directory. Please run this command from the project root.".into());
+        // Set the version for the prebuilt image
+        let version = env!("CARGO_PKG_VERSION");
+        std::env::set_var("NEBU_VERSION", version);
+        println!("Using Nebulous version: {}", version);
+        
+        let docker_compose_path = "deploy/docker/docker-compose.yml";
+        if !std::path::Path::new(docker_compose_path).exists() {
+            return Err(format!("{} not found. A docker-compose.yml file in the deploy/docker directory is required.", docker_compose_path).into());
         }
         
-        let status = std::process::Command::new("docker compose")
-            .args(["up", "--build"])
+        let status = std::process::Command::new("docker")
+            .args(["compose", "-f", docker_compose_path, "up"])
             .status()?;
             
         if !status.success() {
-            return Err("Failed to start docker-compose. Check your Docker installation and docker-compose.yml file.".into());
+            return Err("Failed to start docker-compose. Check your Docker installation.".into());
         }
         
         println!("Docker stack started successfully!");
