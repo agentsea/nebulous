@@ -12,7 +12,49 @@ pub async fn execute(
     port: u16,
     internal_auth: bool,
     auth_port: u16,
+    docker: bool,
 ) -> Result<(), Box<dyn Error>> {
+    // Check docker flag FIRST, before any configuration validation
+    if docker {
+        println!("Starting Nebulous in Docker mode...");
+        println!("This will use docker-compose to start the full stack with prebuilt images.");
+        println!("Make sure you have Docker and docker-compose installed.");
+        
+        // Set default environment variables for docker mode to prevent validation errors
+        if std::env::var("NEBU_BUCKET_NAME").is_err() {
+            std::env::set_var("NEBU_BUCKET_NAME", "nebulous");
+        }
+        if std::env::var("NEBU_BUCKET_REGION").is_err() {
+            std::env::set_var("NEBU_BUCKET_REGION", "us-east-1");
+        }
+        if std::env::var("NEBU_ROOT_OWNER").is_err() {
+            std::env::set_var("NEBU_ROOT_OWNER", "me");
+        }
+        
+        // Set the version for the prebuilt image
+        let version = env!("CARGO_PKG_VERSION");
+        std::env::set_var("NEBU_VERSION", version);
+        println!("Using Nebulous version: {}", version);
+        
+        let docker_compose_path = "deploy/docker/docker-compose.yml";
+        if !std::path::Path::new(docker_compose_path).exists() {
+            return Err(format!("{} not found. A docker-compose.yml file in the deploy/docker directory is required.", docker_compose_path).into());
+        }
+        
+        let status = std::process::Command::new("docker")
+            .args(["compose", "-f", docker_compose_path, "up"])
+            .status()?;
+            
+        if !status.success() {
+            return Err("Failed to start docker-compose. Check your Docker installation.".into());
+        }
+        
+        println!("Docker stack started successfully!");
+        println!("Nebulous server should be available at http://{}:{}", host, port);
+        return Ok(());
+    }
+
+    // Only validate configuration if NOT running in docker mode
     let app_state = create_app_state().await?;
     let app = create_app(app_state.clone()).await;
 
