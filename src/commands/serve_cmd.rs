@@ -38,15 +38,15 @@ pub async fn execute(
         
         let docker_compose_path = "deploy/docker/docker-compose.yml";
         if !std::path::Path::new(docker_compose_path).exists() {
-            return Err(format!("{} not found. Please run this command from the project root.", docker_compose_path).into());
+            return Err(format!("{} not found. A docker-compose.yml file in the deploy/docker directory is required.", docker_compose_path).into());
         }
         
         let status = std::process::Command::new("docker")
-            .args(["compose", "-f", docker_compose_path, "up", "--build"])
+            .args(["compose", "-f", docker_compose_path, "up"])
             .status()?;
             
         if !status.success() {
-            return Err("Failed to start docker-compose. Check your Docker installation and docker-compose.yml file.".into());
+            return Err("Failed to start docker-compose. Check your Docker installation.".into());
         }
         
         println!("Docker stack started successfully!");
