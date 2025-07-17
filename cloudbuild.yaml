@@ -28,7 +28,8 @@ steps:
           TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
         fi
         
-        # Build and push all tags in one operation
+        # Build and push for linux/amd64
+        echo "Building with tags: $$TAGS"
         docker buildx build \
           --platform linux/amd64 \
           $$TAGS \
