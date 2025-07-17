@@ -20,6 +20,25 @@ services:
       - postgres
     ports:
       - "3000:3000"
+  
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale
+    hostname: nebulous
+    environment:
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=true
+      - TS_AUTH_KEY=
+      - TS_EXTRA_ARGS=--login-server https://headscale.nebulous.sh
+    volumes:
+      - nebu-ts-authkey:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+      - nebu-ts-sock:/var/run/tailscale
+      - nebu-tmp:/tmp
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    restart: unless-stopped
 
 volumes:
   sccache:
