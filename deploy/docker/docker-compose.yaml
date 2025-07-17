@@ -42,3 +42,9 @@ services:
 
 volumes:
   sccache:
+  nebu-ts-authkey:
+    driver: local
+  nebu-ts-sock:
+    driver: local
+  nebu-tmp:
+    driver: local
