@@ -59,7 +59,7 @@ pub enum Commands {
         #[arg(long, default_value_t = 8080)]
         auth_port: u16,
 
-        /// Run in Docker mode (uses docker-compose)
+        /// Run in Docker mode
         #[arg(long, default_value_t = false)]
         docker: bool,
     },
