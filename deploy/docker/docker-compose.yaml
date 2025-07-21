@@ -1,25 +1,40 @@
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:17
     environment:
-      POSTGRES_HOST_AUTH_METHOD: trust  # No password
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:8
+    restart: unless-stopped
+    network_mode: service:tailscale
 
   nebu:
     # image: us-docker.pkg.dev/agentsea-dev/nebulous/server:${NEBU_VERSION:-latest}
     image: us-docker.pkg.dev/agentsea-dev/nebulous/server:latest
-    container_name: nebu
+    command: ["sh", "-c", "exec nebu serve --host 0.0.0.0 --port 3000"]
     environment:
-      DATABASE_URL: postgres://postgres@postgres:5432/postgres
-      RUST_LOG: debug
-      NEBU_BUCKET_NAME: nebulous
-      NEBU_BUCKET_REGION: us-east-1
-      NEBU_ROOT_OWNER: me
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5342
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      RUST_LOG: $RUST_LOG
+      NEBU_BUCKET_NAME: $NEBU_BUCKET_NAME
+      NEBU_BUCKET_REGION: $NEBU_BUCKET_REGION
+      NEBU_ROOT_OWNER: $NEBU_ROOT_OWNER
+      NEBU_PUBLISH_URL: $NEBU_PUBLISH_URL
+      TS_API_KEY: $TS_APIKEY
+    network_mode: service:tailscale
     depends_on:
+      - tailscale
       - postgres
-    ports:
-      - "3000:3000"
+      - redis
   
   tailscale:
     image: tailscale/tailscale:latest
@@ -27,17 +42,17 @@ services:
     hostname: nebulous
     environment:
       - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=true
-      - TS_AUTH_KEY=
-      - TS_EXTRA_ARGS=--login-server https://headscale.nebulous.sh
+      - TS_USERSPACE=false
+      - TS_AUTHKEY=$TS_AUTHKEY
+      - TS_EXTRA_ARGS=--login-server $TS_LOGIN_SERVER
     volumes:
       - nebu-ts-authkey:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
       - nebu-ts-sock:/var/run/tailscale
       - nebu-tmp:/tmp
+    devices:
+      - /dev/net/tun:/dev/net/tun
     cap_add:
       - NET_ADMIN
-      - SYS_MODULE
     restart: unless-stopped
 
 volumes:
@@ -45,6 +60,4 @@ volumes:
   nebu-ts-authkey:
     driver: local
   nebu-ts-sock:
-    driver: local
   nebu-tmp:
-    driver: local
