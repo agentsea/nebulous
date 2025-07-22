@@ -198,7 +198,7 @@ async fn serve_docker(
     );
     let nebu_bucket_name = format!(
         "NEBU_BUCKET_NAME={}",
-        std::env::var("NEBU_BUCKET_NAME").unwrap_or_else(|_| "nebulous-bucket".to_string())
+        std::env::var("NEBU_BUCKET_NAME").expect("NEBU_BUCKET_NAME must be set")
     );
     let nebu_bucket_region = format!(
         "NEBU_BUCKET_REGION={}",
