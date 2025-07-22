@@ -202,7 +202,7 @@ async fn serve_docker(
     );
     let nebu_bucket_region = format!(
         "NEBU_BUCKET_REGION={}",
-        std::env::var("NEBU_BUCKET_REGION").unwrap_or_else(|_| "us-west-2".to_string())
+        std::env::var("NEBU_BUCKET_REGION").expect("NEBU_BUCKET_REGION must be set")
     );
     let nebu_root_owner = format!(
         "NEBU_ROOT_OWNER={}",
