@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/nebulous
-COPY ./Cargo.toml ./Cargo.lock ./
+COPY Cargo.toml Cargo.lock ./
 
 # Pre-build dependencies to cache them
 RUN mkdir -p src && echo "fn main() {}" > src/main.rs
@@ -20,14 +20,14 @@ COPY ./src ./src
 RUN cargo build --release
 
 
-FROM debian:bullseye-slim as binary-only
+FROM debian:bullseye-slim AS binary-only
 
 COPY --from=builder /usr/src/nebulous/target/release/nebulous /usr/local/bin/nebulous
 
 RUN ln -s /usr/local/bin/nebulous /usr/local/bin/nebu
 
 
-FROM binary-only as binary-and-tools
+FROM binary-only AS binary-and-tools
 
 # Install runtime dependencies including Tailscale
 RUN apt-get update && apt-get install -y \
