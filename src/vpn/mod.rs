@@ -56,10 +56,10 @@ impl VpnConfig {
                 let tailnet = SERVER_CONFIG.vpn.tailnet.as_ref();
                 
                 if api_key.is_none() {
-                    return Err("Tailscale requires VPN_API_KEY environment variable".to_string());
+                    return Err("Tailscale requires TS_APIKEY environment variable".to_string());
                 }
                 if tailnet.is_none() {
-                    return Err("Tailscale requires VPN_TAILNET environment variable".to_string());
+                    return Err("Tailscale requires TS_TAILNET environment variable".to_string());
                 }
             }
             VpnProvider::Headscale => {
