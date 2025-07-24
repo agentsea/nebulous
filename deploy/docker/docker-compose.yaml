@@ -14,7 +14,8 @@ services:
 
   nebu:
     # image: us-docker.pkg.dev/agentsea-dev/nebulous/server:${NEBU_VERSION:-latest}
-    image: us-docker.pkg.dev/agentsea-dev/nebulous/server:latest
+    # image: us-docker.pkg.dev/agentsea-dev/nebulous/server:latest
+    image: us-docker.pkg.dev/agentsea-dev/nebulous/server:c2e0e00-binary-only
     command: ["sh", "-c", "exec nebu serve --host 0.0.0.0 --port 3000"]
     environment:
       DATABASE_HOST: postgres
@@ -29,7 +30,10 @@ services:
       NEBU_BUCKET_REGION: $NEBU_BUCKET_REGION
       NEBU_ROOT_OWNER: $NEBU_ROOT_OWNER
       NEBU_PUBLISH_URL: $NEBU_PUBLISH_URL
-      TS_API_KEY: $TS_APIKEY
+      TS_APIKEY: $TS_APIKEY
+      TS_TAILNET: $TS_TAILNET
+      TS_LOGIN_SERVER: $TS_LOGIN_SERVER
+
     network_mode: service:tailscale
     depends_on:
       - tailscale
@@ -37,7 +41,7 @@ services:
       - redis
   
   tailscale:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:stable
     container_name: tailscale
     hostname: nebulous
     environment:
@@ -54,6 +58,8 @@ services:
     cap_add:
       - NET_ADMIN
     restart: unless-stopped
+
+    
 
 volumes:
   sccache:
