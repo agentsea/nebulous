@@ -14,25 +14,54 @@ steps:
     args:
       - "-c"
       - |
-        # Prepare tag list
-        TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$BRANCH_NAME"
+        # Initialize tag variables
+        TAGS=""
+        BINARY_ONLY_TAGS=""
+        
+        # Add SHORT_SHA tag
+        SHORT_SHA_TAG="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA"
+        TAGS="$$TAGS $$SHORT_SHA_TAG"
+        BINARY_ONLY_TAGS="$$BINARY_ONLY_TAGS $$SHORT_SHA_TAG-binary-only"
+        
+        # Add BRANCH_NAME tag
+        BRANCH_TAG="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$BRANCH_NAME"
+        TAGS="$$TAGS $$BRANCH_TAG"
+        BINARY_ONLY_TAGS="$$BINARY_ONLY_TAGS $$BRANCH_TAG-binary-only"
         
         # Add latest tag if on main branch
         if [ "$BRANCH_NAME" == "main" ]; then
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
+          LATEST_TAG="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
+          TAGS="$$TAGS $$LATEST_TAG"
+          BINARY_ONLY_TAGS="$$BINARY_ONLY_TAGS $$LATEST_TAG-binary-only"
         fi
         
         # Add version tag if TAG_NAME exists
         if [ -n "$TAG_NAME" ]; then
           echo "Detected tag: $TAG_NAME. Adding version tag."
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
+          VERSION_TAG="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
+          TAGS="$$TAGS $$VERSION_TAG"
+          BINARY_ONLY_TAGS="$$BINARY_ONLY_TAGS $$VERSION_TAG-binary-only"
         fi
         
-        # Build and push for linux/amd64
-        echo "Building with tags: $$TAGS"
+        # Cache args
+        CACHE_FROM="--cache-from=type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/cache:buildcache"
+        CACHE_TO="--cache-to=type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/cache:buildcache,mode=max"
+
         docker buildx build \
           --platform linux/amd64 \
+          --target binary-only \
+          $$BINARY_ONLY_TAGS \
+          $$CACHE_FROM \
+          $$CACHE_TO \
+          --push \
+          .
+        
+        docker buildx build \
+          --platform linux/amd64 \
+          --target binary-and-tools \
           $$TAGS \
+          $$CACHE_FROM \
+          $$CACHE_TO \
           --push \
           .
 
