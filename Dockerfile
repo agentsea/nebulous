@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/nebulous
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml ./
 
 # Pre-build dependencies to cache them
 RUN mkdir -p src && echo "fn main() {}" > src/main.rs
