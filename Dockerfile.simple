@@ -1,0 +1,41 @@
+FROM rust:1.88-slim-bullseye AS builder
+
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    build-essential \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/nebulous
+COPY ./Cargo.toml ./Cargo.lock ./
+
+# Pre-build dependencies to cache them
+RUN mkdir -p src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release || true
+RUN rm -rf src
+
+COPY ./src ./src
+
+RUN cargo build --release
+
+
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# COPY --from=builder /usr/src/nebulous/target/debug/nebulous /usr/local/bin/nebulous
+COPY --from=builder /usr/src/nebulous/target/release/nebulous /usr/local/bin/nebulous
+
+RUN ln -s /usr/local/bin/nebulous /usr/local/bin/nebu
+
+ENV RUST_LOG=info
+ENV NEBU_BUCKET_NAME=nebulous
+ENV NEBU_BUCKET_REGION=us-east-1
+ENV NEBU_ROOT_OWNER=me
+ENV TS_APIKEY=dummy
+ENV TS_TAILNET=dummy
+
+CMD ["nebulous", "--version"] 
