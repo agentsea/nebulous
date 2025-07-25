@@ -47,6 +47,43 @@ steps:
         CACHE_FROM="--cache-from=type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/cache:buildcache"
         CACHE_TO="--cache-to=type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/cache:buildcache,mode=max"
 
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Build Full Images"
+    waitFor: ["Build Binary-Only Images"]
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        # Initialize tag variables
+        TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA"
+
+        # Add branch name tag if BRANCH_NAME is not empty
+        if [ -n "$BRANCH_NAME" ]; then
+          echo "Detected branch: $BRANCH_NAME. Adding branch tag."
+          DOCKER_TAG=$(echo "$BRANCH_NAME" | sed 's/[^a-z0-9._-]/-/g' | sed 's/^[.-]//' | sed 's/[.-]$//')
+          echo "Transformed branch $BRANCH_NAME to Docker tag: $$DOCKER_TAG"
+          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$$DOCKER_TAG"
+        fi
+        
+        # Add latest tag if on main branch
+        if [ "$BRANCH_NAME" == "main" ]; then
+          echo "Detected main branch. Adding latest tag."
+          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
+        fi
+        
+        # Add version tag if TAG_NAME exists
+        if [ -n "$TAG_NAME" ]; then
+          echo "Detected tag: $TAG_NAME. Adding version tag."
+          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
+        fi
+        
+        # Cache args
+        CACHE_FROM="--cache-from=type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/cache:buildcache"
+        CACHE_TO="--cache-to=type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/cache:buildcache,mode=max"
+
+        # Build (binary-only) slim-image
+        # This img serves as base layer for the full image and cached
         docker buildx build \
           --platform linux/amd64 \
           --target binary-only \
@@ -55,7 +92,8 @@ steps:
           $$CACHE_TO \
           --push \
           .
-        
+
+        # Build full image with tools on top of the binary-only image
         docker buildx build \
           --platform linux/amd64 \
           --target binary-and-tools \
