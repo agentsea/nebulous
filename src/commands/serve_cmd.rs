@@ -13,14 +13,12 @@ pub async fn execute(
     auth_port: u16,
     docker: bool,
 ) -> Result<(), Box<dyn Error>> {
-    // Check docker flag FIRST, before any configuration validation
     if docker {
         println!("Starting Nebulous in Docker mode...");
         serve_docker_with_compose(host, port, internal_auth, auth_port).await?;
         return Ok(());
     }
 
-    // Only validate configuration if NOT running in docker mode
     let app_state = create_app_state().await?;
     let app = create_app(app_state.clone()).await;
 
