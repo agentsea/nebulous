@@ -1,5 +1,3 @@
-// src/commands/serve.rs
-
 use bollard::container::*;
 use bollard::errors::Error as BollardError;
 use bollard::models::*;
@@ -219,13 +217,6 @@ async fn serve_docker_with_bollard(
         std::env::var("TS_APIKEY").unwrap_or_else(|_| "your-ts-apikey".to_string())
     );
 
-    println!("NEBU_BUCKET_NAME: {}", std::env::var("NEBU_BUCKET_NAME").unwrap_or_default());
-    println!("NEBU_BUCKET_REGION: {}", std::env::var("NEBU_BUCKET_REGION").unwrap_or_default());
-    println!("NEBU_ROOT_OWNER: {}", std::env::var("NEBU_ROOT_OWNER").unwrap_or_default());
-    println!("NEBU_PUBLISH_URL: {}", std::env::var("NEBU_PUBLISH_URL").unwrap_or_default());
-    println!("TS_APIKEY: {}", std::env::var("TS_APIKEY").unwrap_or_default());
-    println!("RUST_LOG: {}", std::env::var("RUST_LOG").unwrap_or_default());
-
     let envs = vec![
         "DATABASE_HOST=postgres",
         "DATABASE_PORT=5342",
@@ -333,7 +324,6 @@ impl Drop for TempFileGuard {
     }
 }
 
-// Manages docker-compose process lifecycle
 struct DockerComposeManager {
     child: std::process::Child,
     compose_path: String,
@@ -341,8 +331,17 @@ struct DockerComposeManager {
 
 impl DockerComposeManager {
     fn new(compose_path: String) -> Result<Self, Box<dyn Error>> {
+
+        use nebulous::config::SERVER_CONFIG;
+
         let child = std::process::Command::new("docker")
             .args(["compose", "-f", &compose_path, "up", "--build"])
+            .env("NEBU_BUCKET_NAME", SERVER_CONFIG.bucket_name.clone())
+            .env("NEBU_BUCKET_REGION", SERVER_CONFIG.bucket_region.clone())
+            .env("NEBU_ROOT_OWNER", SERVER_CONFIG.root_owner.clone())
+            .env("NEBU_PUBLISH_URL", SERVER_CONFIG.publish_url.clone().unwrap_or_default())
+            .env("TS_APIKEY", SERVER_CONFIG.vpn.api_key.clone().unwrap_or_default())
+            .env("RUST_LOG", "info")
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn()?;
@@ -378,7 +377,6 @@ impl DockerComposeManager {
     }
 }
 
-// Manages output streaming
 struct OutputStreamer {
     stdout_handle: tokio::task::JoinHandle<()>,
     stderr_handle: tokio::task::JoinHandle<()>,
@@ -429,7 +427,6 @@ impl OutputStreamer {
     }
 }
 
-// Manages signal handling and graceful shutdown
 struct SignalHandler {
     shutdown_rx: tokio::sync::broadcast::Receiver<()>,
 }
@@ -465,22 +462,17 @@ async fn serve_docker_with_compose(
     println!("Make sure you have Docker and docker-compose installed.");
     println!("Press Ctrl+C to stop and clean up.");
     
-    // Set up environment
     setup_environment()?;
     
-    // Create temporary docker-compose file
     let (compose_path, _guard) = create_temp_compose_file()?;
     
-    // Initialize components
     let (mut signal_handler, _shutdown_tx) = SignalHandler::new();
     let mut docker_manager = DockerComposeManager::new(compose_path.clone())?;
     
-    // Extract streams for output handling
     let stdout = docker_manager.child.stdout.take().unwrap();
     let stderr = docker_manager.child.stderr.take().unwrap();
     let output_streamer = OutputStreamer::new(stdout, stderr);
     
-    // Main execution loop with structured concurrency
     let result = tokio::select! {
         _ = signal_handler.wait_for_shutdown() => {
             println!("Shutting down docker-compose...");
