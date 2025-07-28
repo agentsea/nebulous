@@ -13,9 +13,7 @@ services:
     network_mode: service:tailscale
 
   nebu:
-    # image: us-docker.pkg.dev/agentsea-dev/nebulous/server:${NEBU_VERSION:-latest}
-    # image: us-docker.pkg.dev/agentsea-dev/nebulous/server:latest
-    image: us-docker.pkg.dev/agentsea-dev/nebulous/server:c2e0e00-binary-only
+    image: us-docker.pkg.dev/agentsea-dev/nebulous/server-slim:$CARGO_PKG_VERSION
     command: ["sh", "-c", "exec nebu serve --host 0.0.0.0 --port 3000"]
     environment:
       DATABASE_HOST: postgres
