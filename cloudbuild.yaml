@@ -15,7 +15,6 @@ steps:
     args:
       - "-c"
       - |
-        # Initialize tag variables for slim image
         SLIM_TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:$SHORT_SHA"
         FULL_TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA"
 
