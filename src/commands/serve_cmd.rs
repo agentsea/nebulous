@@ -215,7 +215,6 @@ async fn serve_docker_with_compose(
     println!("Make sure you have Docker and docker compose installed.");
     println!("Press Ctrl+C to stop and clean up.");
     
-    setup_environment()?;
     
     let (compose_path, _guard) = create_temp_compose_file()?;
     
@@ -257,25 +256,6 @@ async fn serve_docker_with_compose(
     result
 }
 
-fn setup_environment() -> Result<(), Box<dyn Error>> {
-    // Set default environment variables for docker mode to prevent validation errors
-    if std::env::var("NEBU_BUCKET_NAME").is_err() {
-        std::env::set_var("NEBU_BUCKET_NAME", "nebulous");
-    }
-    if std::env::var("NEBU_BUCKET_REGION").is_err() {
-        std::env::set_var("NEBU_BUCKET_REGION", "us-east-1");
-    }
-    if std::env::var("NEBU_ROOT_OWNER").is_err() {
-        std::env::set_var("NEBU_ROOT_OWNER", "me");
-    }
-    
-    // Set the version for the prebuilt image
-    let version = env!("CARGO_PKG_VERSION");
-    std::env::set_var("NEBU_VERSION", version);
-    println!("Using Nebulous version: {}", version);
-    
-    Ok(())
-}
 
 fn create_temp_compose_file() -> Result<(String, TempFileGuard), Box<dyn Error>> {
     // Embed docker-compose file in binary
