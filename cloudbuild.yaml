@@ -15,27 +15,31 @@ steps:
     args:
       - "-c"
       - |
-        # Initialize tag variables
-        TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA"
+        # Initialize tag variables for slim image
+        SLIM_TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:$SHORT_SHA"
+        FULL_TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA"
 
         # Add branch name tag if BRANCH_NAME is not empty
         if [ -n "$BRANCH_NAME" ]; then
           echo "Detected branch: $BRANCH_NAME. Adding branch tag."
           DOCKER_TAG=$(echo "$BRANCH_NAME" | sed 's/[^a-z0-9._-]/-/g' | sed 's/^[.-]//' | sed 's/[.-]$//')
           echo "Transformed branch $BRANCH_NAME to Docker tag: $$DOCKER_TAG"
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$$DOCKER_TAG"
+          SLIM_TAGS="$$SLIM_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:$$DOCKER_TAG"
+          FULL_TAGS="$$FULL_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$$DOCKER_TAG"
         fi
         
         # Add latest tag if on main branch
         if [ "$BRANCH_NAME" == "main" ]; then
           echo "Detected main branch. Adding latest tag."
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
+          SLIM_TAGS="$$SLIM_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:latest"
+          FULL_TAGS="$$FULL_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
         fi
         
         # Add version tag if TAG_NAME exists
         if [ -n "$TAG_NAME" ]; then
           echo "Detected tag: $TAG_NAME. Adding version tag."
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
+          SLIM_TAGS="$$SLIM_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:$TAG_NAME"
+          FULL_TAGS="$$FULL_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
         fi
         
         # Cache args
@@ -47,7 +51,7 @@ steps:
         docker buildx build \
           --platform linux/amd64 \
           --target binary-only \
-          $$TAGS \
+          $$SLIM_TAGS \
           $$CACHE_FROM \
           $$CACHE_TO \
           --push \
@@ -57,7 +61,7 @@ steps:
         docker buildx build \
           --platform linux/amd64 \
           --target binary-and-tools \
-          $$TAGS \
+          $$FULL_TAGS \
           $$CACHE_FROM \
           $$CACHE_TO \
           --push \
