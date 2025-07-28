@@ -89,7 +89,15 @@ export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 ```
 
+Export the bucket related environment variables (dummies work)
+```sh
+export NEBU_BUCKET_NAME="XXX" 
+export NEBU_BUCKET_REGION="XXX"
+export NEBU_ROOT_OWNER="XXX"
+```
+
 Run a local API server on docker
+
 ```sh
 neb serve --docker
 ```

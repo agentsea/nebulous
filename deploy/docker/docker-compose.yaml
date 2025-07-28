@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:8
+    restart: unless-stopped
+    network_mode: service:tailscale
+
+  nebu:
+    image: us-docker.pkg.dev/agentsea-dev/nebulous/server-slim:$CARGO_PKG_VERSION
+    command: ["sh", "-c", "exec nebu serve --host 0.0.0.0 --port 3000"]
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5342
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      RUST_LOG: $RUST_LOG
+      NEBU_BUCKET_NAME: $NEBU_BUCKET_NAME
+      NEBU_BUCKET_REGION: $NEBU_BUCKET_REGION
+      NEBU_ROOT_OWNER: $NEBU_ROOT_OWNER
+      NEBU_PUBLISH_URL: $NEBU_PUBLISH_URL
+      TS_APIKEY: $TS_APIKEY
+      TS_TAILNET: $TS_TAILNET
+      TS_LOGIN_SERVER: $TS_LOGIN_SERVER
+
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
+      - postgres
+      - redis
+  
+  tailscale:
+    image: tailscale/tailscale:stable
+    container_name: tailscale
+    hostname: nebulous
+    environment:
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_AUTHKEY=$TS_AUTHKEY
+      - TS_EXTRA_ARGS=--login-server $TS_LOGIN_SERVER
+    volumes:
+      - nebu-ts-authkey:/var/lib/tailscale
+      - nebu-ts-sock:/var/run/tailscale
+      - nebu-tmp:/tmp
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+
+    
+
+volumes:
+  sccache:
+  nebu-ts-authkey:
+    driver: local
+  nebu-ts-sock:
+  nebu-tmp:

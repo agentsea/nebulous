@@ -9,38 +9,60 @@ steps:
         docker buildx inspect --bootstrap
 
   - name: "gcr.io/cloud-builders/docker"
-    id: "Build and Push"
+    waitFor: ["Setup Buildx"]
+    id: "Build Images"
     entrypoint: "bash"
     args:
       - "-c"
       - |
-        # Prepare tag list
-        TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA"
+        SLIM_TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:$SHORT_SHA"
+        FULL_TAGS="-t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$SHORT_SHA"
 
         # Add branch name tag if BRANCH_NAME is not empty
         if [ -n "$BRANCH_NAME" ]; then
           echo "Detected branch: $BRANCH_NAME. Adding branch tag."
           DOCKER_TAG=$(echo "$BRANCH_NAME" | sed 's/[^a-z0-9._-]/-/g' | sed 's/^[.-]//' | sed 's/[.-]$//')
           echo "Transformed branch $BRANCH_NAME to Docker tag: $$DOCKER_TAG"
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$$DOCKER_TAG"
+          SLIM_TAGS="$$SLIM_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:$$DOCKER_TAG"
+          FULL_TAGS="$$FULL_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$$DOCKER_TAG"
         fi
         
         # Add latest tag if on main branch
         if [ "$BRANCH_NAME" == "main" ]; then
           echo "Detected main branch. Adding latest tag."
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
+          SLIM_TAGS="$$SLIM_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:latest"
+          FULL_TAGS="$$FULL_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:latest"
         fi
         
         # Add version tag if TAG_NAME exists
         if [ -n "$TAG_NAME" ]; then
           echo "Detected tag: $TAG_NAME. Adding version tag."
-          TAGS="$$TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
+          SLIM_TAGS="$$SLIM_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server-slim:$TAG_NAME"
+          FULL_TAGS="$$FULL_TAGS -t us-docker.pkg.dev/$PROJECT_ID/nebulous/server:$TAG_NAME"
         fi
         
-        # Build and push all tags in one operation
+        # Cache args
+        CACHE_FROM="--cache-from=type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/cache:buildcache"
+        CACHE_TO="--cache-to=type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/nebulous/cache:buildcache,mode=max"
+
+        # Build (binary-only) slim-image
+        # This img serves as base layer for the full image and cached
         docker buildx build \
           --platform linux/amd64 \
-          $$TAGS \
+          --target binary-only \
+          $$SLIM_TAGS \
+          $$CACHE_FROM \
+          $$CACHE_TO \
+          --push \
+          .
+
+        # Build full image with tools on top of the binary-only image
+        docker buildx build \
+          --platform linux/amd64 \
+          --target binary-and-tools \
+          $$FULL_TAGS \
+          $$CACHE_FROM \
+          $$CACHE_TO \
           --push \
           .
 
